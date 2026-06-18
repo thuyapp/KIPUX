@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -29,12 +29,10 @@ export async function middleware(request: NextRequest) {
 
   const isLoginPage = request.nextUrl.pathname === '/login'
 
-  // Si NO hay usuario y NO está en login, lo mandamos al login
   if (!user && !isLoginPage) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Si SÍ hay usuario y está en login, lo mandamos al dashboard
   if (user && isLoginPage) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }

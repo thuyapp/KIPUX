@@ -1,0 +1,314 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Bell, Search, Camera, Plus, Minus, Package } from 'lucide-react'
+import StockModal from './StockModal'
+
+export type Producto = {
+  id: string
+  nombre: string
+  foto_url: string | null
+  stock_actual: number
+  stock_minimo: number
+  unidad: string
+  costo_usd: number
+  categorias: { nombre: string } | null
+}
+
+type Almacen = { id: string; nombre: string } | null
+type Filtro = 'todos' | 'bajo_stock' | 'agotados'
+type ModalState = { producto: Producto; tipo: 'ingreso' | 'retiro' } | null
+
+function getStockBadge(p: Producto) {
+  if (p.stock_actual === 0) return { label: 'Agotado', bg: '#FF4D4D', color: '#FFFFFF' }
+  if (p.stock_actual <= p.stock_minimo) return { label: 'Bajo stock', bg: '#F4C400', color: '#111111' }
+  return { label: 'Saludable', bg: '#00D7A7', color: '#FFFFFF' }
+}
+
+export default function ProductList({
+  productos,
+  almacenDefault,
+  nombreUsuario,
+}: {
+  productos: Producto[]
+  almacenDefault: Almacen
+  nombreUsuario: string
+}) {
+  const router = useRouter()
+  const [busqueda, setBusqueda] = useState('')
+  const [filtro, setFiltro] = useState<Filtro>('todos')
+  const [modal, setModal] = useState<ModalState>(null)
+
+  const totalProductos = productos.length
+  const valorInventario = productos.reduce((sum, p) => sum + p.stock_actual * p.costo_usd, 0)
+  const stockBajoCount = productos.filter(p => p.stock_actual > 0 && p.stock_actual <= p.stock_minimo).length
+  const agotadosCount = productos.filter(p => p.stock_actual === 0).length
+
+  const productosFiltrados = productos
+    .filter(p => p.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+    .filter(p => {
+      if (filtro === 'bajo_stock') return p.stock_actual > 0 && p.stock_actual <= p.stock_minimo
+      if (filtro === 'agotados') return p.stock_actual === 0
+      return true
+    })
+
+  function handleSuccess() {
+    setModal(null)
+    router.refresh()
+  }
+
+  const summaryCards = [
+    { label: 'Total productos', value: String(totalProductos) },
+    { label: 'Valor inventario', value: `$${valorInventario.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+    { label: 'Bajo stock', value: String(stockBajoCount) },
+    { label: 'Agotados', value: String(agotadosCount) },
+  ]
+
+  const filtros: { key: Filtro; label: string }[] = [
+    { key: 'todos', label: 'Todos' },
+    { key: 'bajo_stock', label: 'Bajo stock' },
+    { key: 'agotados', label: 'Agotados' },
+  ]
+
+  return (
+    <div style={{ background: '#F8F6EA', minHeight: '100vh', fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)' }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '28px 16px 100px' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+          <div>
+            <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#111111', margin: '0 0 4px' }}>
+              Hola, {nombreUsuario} 👋
+            </h1>
+            <p style={{ fontSize: '15px', color: '#6B6B6B', margin: 0 }}>
+              Tu inventario está bajo control.
+            </p>
+          </div>
+          <button
+            style={{
+              width: '42px', height: '42px', borderRadius: '50%',
+              border: '1px solid #E8E8E8', background: '#FFFFFF',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#111111', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', flexShrink: 0,
+            }}
+          >
+            <Bell size={18} />
+          </button>
+        </div>
+
+        {/* Tarjetas de resumen */}
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '4px' }}>
+          {summaryCards.map(card => (
+            <div
+              key={card.label}
+              style={{
+                background: '#FFFFFF', border: '1px solid #E8E8E8',
+                borderRadius: '16px', padding: '16px',
+                minWidth: '130px', flex: '1',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+              }}
+            >
+              <p style={{ fontSize: '12px', color: '#6B6B6B', margin: '0 0 6px' }}>{card.label}</p>
+              <p style={{ fontSize: '22px', fontWeight: 700, color: '#111111', margin: 0 }}>{card.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Buscador */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '10px',
+          background: '#FFFFFF', border: '1px solid #E8E8E8',
+          borderRadius: '16px', padding: '12px 16px',
+          marginBottom: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+        }}>
+          <Search size={18} style={{ color: '#6B6B6B', flexShrink: 0 }} />
+          <input
+            type="text"
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+            placeholder="Buscar producto..."
+            style={{
+              border: 'none', outline: 'none',
+              background: 'transparent', color: '#111111',
+              fontSize: '15px', width: '100%', fontFamily: 'inherit',
+            }}
+          />
+        </div>
+
+        {/* Filtros */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+          {filtros.map(f => (
+            <button
+              key={f.key}
+              onClick={() => setFiltro(f.key)}
+              style={{
+                padding: '8px 16px', borderRadius: '100px',
+                border: filtro === f.key ? 'none' : '1px solid #E8E8E8',
+                background: filtro === f.key ? '#F4C400' : '#FFFFFF',
+                color: '#111111', fontWeight: filtro === f.key ? 600 : 400,
+                cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit',
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Lista de productos */}
+        {productosFiltrados.length === 0 ? (
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', padding: '64px 0', gap: '12px',
+          }}>
+            <Package size={48} style={{ color: '#E8E8E8' }} />
+            <p style={{ color: '#6B6B6B', fontSize: '15px', textAlign: 'center', margin: 0 }}>
+              {busqueda
+                ? 'No hay productos que coincidan con la búsqueda.'
+                : 'No hay productos en esta categoría.'}
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {productosFiltrados.map(producto => {
+              const badge = getStockBadge(producto)
+              return (
+                <div
+                  key={producto.id}
+                  style={{
+                    background: '#FFFFFF', border: '1px solid #E8E8E8',
+                    borderRadius: '16px', padding: '16px',
+                    display: 'flex', alignItems: 'center', gap: '14px',
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+                  }}
+                >
+                  {/* Foto / Placeholder */}
+                  {producto.foto_url ? (
+                    <img
+                      src={producto.foto_url}
+                      alt={producto.nombre}
+                      style={{ width: '56px', height: '56px', borderRadius: '12px', objectFit: 'cover', flexShrink: 0 }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '56px', height: '56px', borderRadius: '12px', flexShrink: 0,
+                      background: '#F4C400', color: '#111111',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: 700, fontSize: '22px',
+                    }}>
+                      {producto.nombre[0].toUpperCase()}
+                    </div>
+                  )}
+
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{
+                      fontWeight: 600, color: '#111111', margin: '0 0 2px',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {producto.nombre}
+                    </p>
+                    <p style={{ fontSize: '13px', color: '#6B6B6B', margin: '0 0 6px' }}>
+                      {producto.categorias?.nombre ?? 'Sin categoría'}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: 500, color: '#111111' }}>
+                        {producto.stock_actual} {producto.unidad}
+                      </span>
+                      <span style={{
+                        background: badge.bg, color: badge.color,
+                        fontSize: '11px', fontWeight: 600,
+                        padding: '2px 8px', borderRadius: '100px',
+                      }}>
+                        {badge.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Botones – y + */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <button
+                      onClick={() => setModal({ producto, tipo: 'retiro' })}
+                      style={{
+                        width: '40px', height: '40px', borderRadius: '50%',
+                        border: '1px solid #E8E8E8', background: '#F8F6EA',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: '#111111',
+                      }}
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <button
+                      onClick={() => setModal({ producto, tipo: 'ingreso' })}
+                      style={{
+                        width: '40px', height: '40px', borderRadius: '50%',
+                        border: 'none', background: '#F4C400',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: '#111111',
+                      }}
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* FAB cámara */}
+      <button
+        style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 40,
+          width: '64px', height: '64px', borderRadius: '50%',
+          background: '#F4C400', border: 'none', color: '#111111',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', boxShadow: '0 4px 16px rgba(244,196,0,0.4)',
+        }}
+      >
+        <Camera size={26} />
+      </button>
+
+      {/* Modal de stock */}
+      {modal && almacenDefault && (
+        <StockModal
+          producto={modal.producto}
+          almacenId={almacenDefault.id}
+          almacenNombre={almacenDefault.nombre}
+          tipo={modal.tipo}
+          onClose={() => setModal(null)}
+          onSuccess={handleSuccess}
+        />
+      )}
+
+      {/* Sin almacén configurado */}
+      {modal && !almacenDefault && (
+        <div
+          onClick={() => setModal(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 50,
+            background: 'rgba(17,17,17,0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
+          }}
+        >
+          <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '24px', maxWidth: '360px', width: '100%', textAlign: 'center' }}>
+            <p style={{ color: '#FF4D4D', fontWeight: 600, marginBottom: '16px' }}>
+              No hay ningún almacén configurado. Crea uno primero.
+            </p>
+            <button
+              onClick={() => setModal(null)}
+              style={{
+                background: '#111111', color: '#FFFFFF', border: 'none',
+                borderRadius: '100px', padding: '12px 24px',
+                cursor: 'pointer', fontWeight: 500, fontFamily: 'inherit',
+              }}
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
