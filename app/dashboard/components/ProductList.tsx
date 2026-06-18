@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, Search, Camera, Plus, Minus, Package } from 'lucide-react'
+import { Bell, Search, Camera, Plus, Minus, Package, Edit2 } from 'lucide-react'
 import StockModal from './StockModal'
 
 export type Producto = {
@@ -136,6 +136,17 @@ export default function ProductList({
           />
         </div>
 
+        {/* Botón Nuevo producto */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+          <button
+            onClick={() => router.push('/dashboard/productos/nuevo')}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', borderRadius: '100px', border: 'none', background: '#F4C400', color: '#111111', fontWeight: 600, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}
+          >
+            <Plus size={16} />
+            Nuevo producto
+          </button>
+        </div>
+
         {/* Filtros */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
           {filtros.map(f => (
@@ -225,29 +236,25 @@ export default function ProductList({
                     </div>
                   </div>
 
-                  {/* Botones – y + */}
+                  {/* Botones – y + y editar */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                     <button
                       onClick={() => setModal({ producto, tipo: 'retiro' })}
-                      style={{
-                        width: '40px', height: '40px', borderRadius: '50%',
-                        border: '1px solid #E8E8E8', background: '#F8F6EA',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: '#111111',
-                      }}
+                      style={{ width: '40px', height: '40px', borderRadius: '50%', border: '1px solid #E8E8E8', background: '#F8F6EA', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111111' }}
                     >
                       <Minus size={16} />
                     </button>
                     <button
                       onClick={() => setModal({ producto, tipo: 'ingreso' })}
-                      style={{
-                        width: '40px', height: '40px', borderRadius: '50%',
-                        border: 'none', background: '#F4C400',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: '#111111',
-                      }}
+                      style={{ width: '40px', height: '40px', borderRadius: '50%', border: 'none', background: '#F4C400', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111111' }}
                     >
                       <Plus size={16} />
+                    </button>
+                    <button
+                      onClick={() => router.push(`/dashboard/productos/${producto.id}/editar`)}
+                      style={{ width: '40px', height: '40px', borderRadius: '50%', border: '1px solid #E8E8E8', background: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6B6B' }}
+                    >
+                      <Edit2 size={15} />
                     </button>
                   </div>
                 </div>
