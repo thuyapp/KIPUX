@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, Search, Camera, Plus, Minus, Package, Edit2 } from 'lucide-react'
+import { Bell, Search, Camera, Plus, Minus, Package, Edit2, Warehouse, X } from 'lucide-react'
 import StockModal from './StockModal'
 
 export type Producto = {
@@ -16,7 +16,7 @@ export type Producto = {
   categorias: { nombre: string } | null
 }
 
-type Almacen = { id: string; nombre: string } | null
+type AlmacenRef = { id: string; nombre: string } | null
 type Filtro = 'todos' | 'bajo_stock' | 'agotados'
 type ModalState = { producto: Producto; tipo: 'ingreso' | 'retiro' } | null
 
@@ -30,15 +30,23 @@ export default function ProductList({
   productos,
   almacenDefault,
   nombreUsuario,
+  almacenFiltro,
+  almacenNombreFiltro,
 }: {
   productos: Producto[]
-  almacenDefault: Almacen
+  almacenDefault: AlmacenRef
   nombreUsuario: string
+  almacenFiltro?: string
+  almacenNombreFiltro?: string
 }) {
   const router = useRouter()
   const [busqueda, setBusqueda] = useState('')
   const [filtro, setFiltro] = useState<Filtro>('todos')
   const [modal, setModal] = useState<ModalState>(null)
+
+  const efectivoAlmacen: AlmacenRef = almacenFiltro
+    ? { id: almacenFiltro, nombre: almacenNombreFiltro ?? '' }
+    : almacenDefault
 
   const totalProductos = productos.length
   const valorInventario = productos.reduce((sum, p) => sum + p.stock_actual * p.costo_usd, 0)
@@ -166,6 +174,28 @@ export default function ProductList({
           ))}
         </div>
 
+        {/* Banner de almacén filtrado */}
+        {almacenFiltro && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: 'rgba(244,196,0,0.12)', border: '1.5px solid #F4C400',
+            borderRadius: '14px', padding: '12px 16px', marginBottom: '16px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Warehouse size={18} color="#111111" />
+              <span style={{ fontSize: '14px', fontWeight: 600, color: '#111111' }}>
+                Inventario de: {almacenNombreFiltro ?? 'Almacén'}
+              </span>
+            </div>
+            <button
+              onClick={() => router.push('/dashboard')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#111111', padding: '4px', display: 'flex', alignItems: 'center' }}
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
         {/* Lista de productos */}
         {productosFiltrados.length === 0 ? (
           <div style={{
@@ -176,7 +206,9 @@ export default function ProductList({
             <p style={{ color: '#6B6B6B', fontSize: '15px', textAlign: 'center', margin: 0 }}>
               {busqueda
                 ? 'No hay productos que coincidan con la búsqueda.'
-                : 'No hay productos en esta categoría.'}
+                : almacenFiltro
+                  ? 'Este almacén no tiene productos en stock.'
+                  : 'No hay productos en esta categoría.'}
             </p>
           </div>
         ) : (
@@ -278,11 +310,11 @@ export default function ProductList({
       </button>
 
       {/* Modal de stock */}
-      {modal && almacenDefault && (
+      {modal && efectivoAlmacen && (
         <StockModal
           producto={modal.producto}
-          almacenId={almacenDefault.id}
-          almacenNombre={almacenDefault.nombre}
+          almacenId={efectivoAlmacen.id}
+          almacenNombre={efectivoAlmacen.nombre}
           tipo={modal.tipo}
           onClose={() => setModal(null)}
           onSuccess={handleSuccess}
@@ -290,7 +322,7 @@ export default function ProductList({
       )}
 
       {/* Sin almacén configurado */}
-      {modal && !almacenDefault && (
+      {modal && !efectivoAlmacen && (
         <div
           onClick={() => setModal(null)}
           style={{
