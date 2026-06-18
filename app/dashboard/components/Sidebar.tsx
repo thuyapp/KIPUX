@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Package, ArrowLeftRight, Warehouse, Users, Settings } from 'lucide-react'
+import { Home, Package, ArrowLeftRight, Tag, Warehouse, Users, Settings } from 'lucide-react'
 
 const navItems = [
   { label: 'Inicio', href: '/dashboard', icon: Home },
   { label: 'Inventario', href: '/dashboard', icon: Package },
   { label: 'Movimientos', href: '/dashboard/movimientos', icon: ArrowLeftRight },
+  { label: 'Categorías', href: '/dashboard/categorias', icon: Tag },
   { label: 'Almacenes', href: '/dashboard/almacenes', icon: Warehouse },
   { label: 'Empleados', href: '/dashboard/empleados', icon: Users },
   { label: 'Configuración', href: '/dashboard/configuracion', icon: Settings },

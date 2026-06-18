@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Package, Plus, ArrowLeftRight, Menu, Warehouse, Users, Settings } from 'lucide-react'
+import { Home, Package, Plus, ArrowLeftRight, Menu, Tag, Warehouse, Users, Settings } from 'lucide-react'
 
 const moreItems = [
+  { label: 'Categorías', href: '/dashboard/categorias', icon: Tag },
   { label: 'Almacenes', href: '/dashboard/almacenes', icon: Warehouse },
   { label: 'Empleados', href: '/dashboard/empleados', icon: Users },
   { label: 'Configuración', href: '/dashboard/configuracion', icon: Settings },
