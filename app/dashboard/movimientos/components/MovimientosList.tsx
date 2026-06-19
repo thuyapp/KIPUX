@@ -6,7 +6,7 @@ import MovimientoDetalle from './MovimientoDetalle'
 
 export type Movimiento = {
   id: string
-  tipo: 'ingreso' | 'retiro' | 'transferencia' | 'ajuste'
+  tipo: 'ingreso' | 'retiro' | 'transferencia' | 'ajuste' | 'ajuste_auditoria'
   cantidad: number
   nota: string | null
   foto_evidencia_url: string | null
@@ -36,6 +36,7 @@ const tipoConfig = {
   retiro: { label: 'Retiro', bg: '#FFF0F0', color: '#FF4D4D', Icon: ArrowDown },
   transferencia: { label: 'Transferencia', bg: '#FFF9E6', color: '#F4C400', Icon: ArrowLeftRight },
   ajuste: { label: 'Ajuste', bg: '#F5F5F5', color: '#6B6B6B', Icon: RotateCcw },
+  ajuste_auditoria: { label: 'Ajuste', bg: '#F5F5F5', color: '#6B6B6B', Icon: RotateCcw },
 }
 
 const tabs: { key: TabTipo; label: string }[] = [
@@ -76,6 +77,7 @@ function getQtyDisplay(tipo: Movimiento['tipo'], cantidad: number) {
     case 'retiro': return { text: `-${cantidad}`, color: '#FF4D4D' }
     case 'transferencia': return { text: `-${cantidad}`, color: '#F4C400' }
     case 'ajuste': return { text: `${cantidad >= 0 ? '+' : ''}${cantidad}`, color: '#6B6B6B' }
+    case 'ajuste_auditoria': return { text: `${cantidad >= 0 ? '+' : ''}${cantidad}`, color: '#6B6B6B' }
   }
 }
 
