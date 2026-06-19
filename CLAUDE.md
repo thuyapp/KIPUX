@@ -141,3 +141,16 @@ Icons: Lucide React only.
 Bucket: `productos` (must be created manually in Supabase dashboard as public).  
 Path convention: `{empresaId}/{productoId}/foto.{ext}`.  
 Use `crypto.randomUUID()` to pre-generate the product ID before insert so the storage path is known before the DB row exists.
+
+---
+
+## Progreso completado
+
+- ✅ Layout responsive (Sidebar desktop + BottomNav móvil)
+- ✅ Historial de movimientos
+- ✅ Gestión de categorías
+- ✅ Gestión de almacenes con filtro de inventario por almacén
+- ✅ Gestión de empleados con creación de usuarios vía API
+- ✅ Configuración con tasa BCV y alertas email
+- ✅ Modo Auditoría completo con Realtime y panel trabajador
+- ⏳ Cámara + IA (leer facturas)

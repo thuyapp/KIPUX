@@ -122,34 +122,52 @@ export default function ConfiguracionForm({ empresa, tasaActual, configAlertas, 
   const [tasaFecha, setTasaFecha] = useState<string | null>(tasaActual?.fecha ?? null)
   const [tasaFuente, setTasaFuente] = useState<string | null>(tasaActual?.fuente ?? null)
   const [bcvLoading, setBcvLoading] = useState(false)
-  const [bcvError, setBcvError] = useState<string | null>(null)
   const [usarManual, setUsarManual] = useState(false)
   const [usdManual, setUsdManual] = useState(tasaActual?.usd_ves?.toString() ?? '')
   const [eurManual, setEurManual] = useState(tasaActual?.eur_ves?.toString() ?? '')
   const [savingTasa, setSavingTasa] = useState(false)
 
   async function handleActualizarBcv() {
-    setBcvLoading(true); setBcvError(null)
+    setBcvLoading(true)
     try {
-      const [usdRes, eurRes] = await Promise.allSettled([
-        fetch('https://pydolarve.org/api/v2/dollar?monitor=bcv').then(r => r.json()),
-        fetch('https://pydolarve.org/api/v2/euro?monitor=bcv').then(r => r.json()),
-      ])
-      const usdData = usdRes.status === 'fulfilled' ? usdRes.value : null
-      const eurData = eurRes.status === 'fulfilled' ? eurRes.value : null
+      // Primary: pydolarve v1
+      let rawUsd: number | null = null
+      let rawEur: number | null = null
+      try {
+        const [usdRes, eurRes] = await Promise.allSettled([
+          fetch('https://pydolarve.org/api/v1/dollar?page=bcv').then(r => r.ok ? r.json() : null),
+          fetch('https://pydolarve.org/api/v1/euro?page=bcv').then(r => r.ok ? r.json() : null),
+        ])
+        const usdData = usdRes.status === 'fulfilled' ? usdRes.value : null
+        const eurData = eurRes.status === 'fulfilled' ? eurRes.value : null
+        if (usdData?.price != null) rawUsd = Number(usdData.price)
+        if (eurData?.price != null) rawEur = Number(eurData.price)
+      } catch { /* try fallback */ }
 
-      const newUsd = usdData?.price != null ? Number(usdData.price) : null
-      const newEur = eurData?.price != null ? Number(eurData.price) : null
+      // Fallback: ve.dolarapi.com
+      if (!rawUsd || isNaN(rawUsd)) {
+        try {
+          const res = await fetch('https://ve.dolarapi.com/v1/dolares/oficial')
+          if (res.ok) {
+            const data = await res.json()
+            if (data?.promedio != null) rawUsd = Number(data.promedio)
+          }
+        } catch { /* both failed */ }
+      }
 
-      if (!newUsd || isNaN(newUsd)) {
-        setBcvError('No se pudo obtener la tasa del BCV. La API puede estar temporalmente no disponible.')
+      // If both failed, show last saved value silently
+      if (!rawUsd || isNaN(rawUsd)) {
+        showToast(usdVes != null ? 'No se pudo actualizar · Mostrando último valor guardado' : 'API del BCV no disponible temporalmente')
         setBcvLoading(false)
         return
       }
 
+      const newUsd = rawUsd
+      const newEur = rawEur && !isNaN(rawEur) ? rawEur : null
       const fecha = new Date().toISOString().split('T')[0]
+
       setUsdVes(newUsd)
-      setEurVes(!newEur || isNaN(newEur) ? null : newEur)
+      setEurVes(newEur)
       setTasaFecha(fecha)
       setTasaFuente('bcv_api')
 
@@ -157,12 +175,12 @@ export default function ConfiguracionForm({ empresa, tasaActual, configAlertas, 
         empresa_id: empresaId,
         fecha,
         usd_ves: newUsd,
-        eur_ves: !newEur || isNaN(newEur) ? null : newEur,
+        eur_ves: newEur,
         fuente: 'bcv_api',
       })
       showToast('Tasa BCV actualizada ✓')
     } catch {
-      setBcvError('Error de conexión con la API del BCV.')
+      showToast(usdVes != null ? 'No se pudo actualizar · Mostrando último valor guardado' : 'API del BCV no disponible temporalmente')
     }
     setBcvLoading(false)
   }
@@ -349,16 +367,12 @@ export default function ConfiguracionForm({ empresa, tasaActual, configAlertas, 
               fontSize: '14px', fontWeight: 600,
               cursor: bcvLoading ? 'wait' : 'pointer',
               color: '#FFFFFF', fontFamily: 'inherit',
-              marginBottom: bcvError ? '12px' : '20px',
+              marginBottom: '20px',
             }}
           >
             <RefreshCw size={15} />
             {bcvLoading ? 'Actualizando...' : 'Actualizar desde BCV'}
           </button>
-
-          {bcvError && (
-            <p style={{ fontSize: '13px', color: '#FF4D4D', margin: '0 0 16px' }}>{bcvError}</p>
-          )}
 
           <div style={{ height: '1px', background: '#F0F0F0', margin: '4px 0 20px' }} />
 
