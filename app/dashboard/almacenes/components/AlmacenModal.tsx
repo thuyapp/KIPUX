@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import { X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -35,6 +35,7 @@ export default function AlmacenModal({ almacen, empresaId, onClose, onSaved }: P
   const [deactivateState, setDeactivateState] = useState<'idle' | 'checking' | 'confirming'>('idle')
   const [isDeactivating, setIsDeactivating] = useState(false)
   const [stockCount, setStockCount] = useState(0)
+  const mouseDownOnOverlay = useRef(false)
 
   const showDefaultToggle = isEditing && !almacen!.es_default
 
@@ -101,7 +102,8 @@ export default function AlmacenModal({ almacen, empresaId, onClose, onSaved }: P
 
   return (
     <div
-      onClick={onClose}
+      onMouseDown={(e) => { mouseDownOnOverlay.current = e.target === e.currentTarget }}
+      onMouseUp={(e) => { if (mouseDownOnOverlay.current && e.target === e.currentTarget) onClose() }}
       style={{
         position: 'fixed', inset: 0, zIndex: 50,
         background: 'rgba(17,17,17,0.5)',

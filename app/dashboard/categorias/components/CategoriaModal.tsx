@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import { X, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -37,6 +37,7 @@ export default function CategoriaModal({ categoria, empresaId, onClose, onSaved 
   const [deleteState, setDeleteState] = useState<'idle' | 'checking' | 'confirming'>('idle')
   const [isDeleting, setIsDeleting] = useState(false)
   const [productCount, setProductCount] = useState(0)
+  const mouseDownOnOverlay = useRef(false)
 
   async function handleSave() {
     if (!nombre.trim()) { setError('El nombre es requerido'); return }
@@ -88,7 +89,8 @@ export default function CategoriaModal({ categoria, empresaId, onClose, onSaved 
 
   return (
     <div
-      onClick={onClose}
+      onMouseDown={(e) => { mouseDownOnOverlay.current = e.target === e.currentTarget }}
+      onMouseUp={(e) => { if (mouseDownOnOverlay.current && e.target === e.currentTarget) onClose() }}
       style={{
         position: 'fixed', inset: 0, zIndex: 50,
         background: 'rgba(17,17,17,0.5)',

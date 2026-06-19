@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { X, ArrowUp, ArrowDown, ArrowLeftRight, RotateCcw, MapPin, User, Calendar, MessageSquare, Image as ImageIcon } from 'lucide-react'
 import type { Movimiento } from './MovimientosList'
 
@@ -36,6 +36,7 @@ function getQtyDisplay(tipo: Movimiento['tipo'], cantidad: number) {
 
 export default function MovimientoDetalle({ movimiento: m, onClose }: Props) {
   const [showEvidencia, setShowEvidencia] = useState(false)
+  const mouseDownOnOverlay = useRef(false)
   const config = tipoConfig[m.tipo]
   const { Icon } = config
   const qty = getQtyDisplay(m.tipo, m.cantidad)
@@ -47,7 +48,8 @@ export default function MovimientoDetalle({ movimiento: m, onClose }: Props) {
 
   return (
     <div
-      onClick={onClose}
+      onMouseDown={(e) => { mouseDownOnOverlay.current = e.target === e.currentTarget }}
+      onMouseUp={(e) => { if (mouseDownOnOverlay.current && e.target === e.currentTarget) onClose() }}
       style={{
         position: 'fixed', inset: 0, zIndex: 50,
         background: 'rgba(17,17,17,0.5)',
