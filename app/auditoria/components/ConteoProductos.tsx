@@ -10,6 +10,7 @@ type Props = {
   auditoria: AuditoriaActivaTrabajador
   items: AuditoriaItemTrabajador[]
   userId: string
+  empresaId: string
 }
 
 function formatFecha(iso: string) {
@@ -18,7 +19,7 @@ function formatFecha(iso: string) {
   })
 }
 
-export default function ConteoProductos({ auditoria, items: initialItems, userId }: Props) {
+export default function ConteoProductos({ auditoria, items: initialItems, userId, empresaId }: Props) {
   const [items, setItems] = useState<AuditoriaItemTrabajador[]>(initialItems)
   const [selectedIdx, setSelectedIdx] = useState<number>(() => {
     const firstPending = initialItems.findIndex(i => i.estado === 'pendiente')
@@ -27,6 +28,9 @@ export default function ConteoProductos({ auditoria, items: initialItems, userId
   const [cantidad, setCantidad] = useState(0)
   const [saving, setSaving] = useState(false)
   const [showNoListado, setShowNoListado] = useState(false)
+  const [fotoFile, setFotoFile] = useState<File | null>(null)
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const fotoRef = useRef<HTMLInputElement>(null)
 
   const totalItems = items.length
@@ -36,24 +40,68 @@ export default function ConteoProductos({ auditoria, items: initialItems, userId
 
   const currentItem = items[selectedIdx]
 
+  function resetFoto() {
+    setFotoFile(null)
+    setFotoPreview(null)
+    setUploadError(null)
+    if (fotoRef.current) fotoRef.current.value = ''
+  }
+
+  function handleFotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null
+    setFotoFile(file)
+    if (file) {
+      setFotoPreview(URL.createObjectURL(file))
+    } else {
+      setFotoPreview(null)
+    }
+  }
+
   function handleSelect(idx: number) {
     setSelectedIdx(idx)
     const item = items[idx]
     setCantidad(item.estado === 'contado' && item.conteo_fisico !== null ? item.conteo_fisico : 0)
+    resetFoto()
   }
 
   async function handleConfirmar() {
     if (!currentItem) return
     setSaving(true)
     const supabase = createClient()
+
+    let fotoUrl: string | null = null
+    if (fotoFile) {
+      const ext = fotoFile.name.split('.').pop() ?? 'jpg'
+      const storagePath = `${empresaId}/auditorias/${auditoria.id}/${Date.now()}_${currentItem.producto_id}.${ext}`
+      const { data: uploadData, error: uploadErr } = await supabase.storage
+        .from('productos')
+        .upload(storagePath, fotoFile, { upsert: true })
+      if (uploadErr) {
+        setUploadError(`Error al subir foto: ${uploadErr.message}`)
+        setSaving(false)
+        return
+      }
+      if (uploadData) {
+        const { data: urlData } = supabase.storage.from('productos').getPublicUrl(storagePath)
+        fotoUrl = urlData.publicUrl
+      }
+    }
+
+    const updatePayload = {
+      conteo_fisico: cantidad,
+      estado: 'contado',
+      fecha_conteo: new Date().toISOString(),
+      ...(fotoUrl ? { foto_url: fotoUrl } : {}),
+    }
     const { error } = await supabase
       .from('auditoria_items')
-      .update({
-        conteo_fisico: cantidad,
-        estado: 'contado',
-        fecha_conteo: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq('id', currentItem.id)
+    if (error) {
+      setUploadError(`Error al guardar: ${error.message} (code: ${error.code})`)
+      setSaving(false)
+      return
+    }
 
     if (!error) {
       setItems(prev => prev.map((item, idx) =>
@@ -61,6 +109,7 @@ export default function ConteoProductos({ auditoria, items: initialItems, userId
           ? { ...item, conteo_fisico: cantidad, estado: 'contado', fecha_conteo: new Date().toISOString() }
           : item
       ))
+      resetFoto()
       // Auto-advance to next pending
       const nextPending = items.findIndex((item, idx) => idx > selectedIdx && item.estado === 'pendiente')
       if (nextPending >= 0) {
@@ -267,21 +316,60 @@ export default function ConteoProductos({ auditoria, items: initialItems, userId
                   </button>
                 </div>
 
-                {/* Photo button */}
-                <button
-                  onClick={() => fotoRef.current?.click()}
-                  style={{
-                    width: '100%', padding: '10px', borderRadius: '10px',
-                    border: '1.5px dashed #E8E8E8', background: 'transparent',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    cursor: 'pointer', color: '#6B6B6B', fontSize: '13px',
-                    fontFamily: 'inherit', marginBottom: '12px',
-                  }}
-                >
-                  <Camera size={16} />
-                  Foto de evidencia (opcional)
-                </button>
-                <input ref={fotoRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} />
+                {/* Photo button + preview */}
+                {fotoPreview ? (
+                  <div style={{ marginBottom: '12px', position: 'relative' }}>
+                    <img
+                      src={fotoPreview}
+                      alt="Vista previa"
+                      style={{
+                        width: '100%', maxHeight: '160px', objectFit: 'cover',
+                        borderRadius: '10px', border: '1.5px solid #E8E8E8',
+                        display: 'block',
+                      }}
+                    />
+                    <button
+                      onClick={resetFoto}
+                      style={{
+                        position: 'absolute', top: '6px', right: '6px',
+                        background: 'rgba(17,17,17,0.7)', border: 'none',
+                        borderRadius: '50%', width: '24px', height: '24px',
+                        color: '#FFFFFF', fontSize: '12px', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fotoRef.current?.click()}
+                    style={{
+                      width: '100%', padding: '10px', borderRadius: '10px',
+                      border: '1.5px dashed #E8E8E8', background: 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                      cursor: 'pointer', color: '#6B6B6B', fontSize: '13px',
+                      fontFamily: 'inherit', marginBottom: '12px',
+                    }}
+                  >
+                    <Camera size={16} />
+                    Foto de evidencia (opcional)
+                  </button>
+                )}
+                <input
+                  ref={fotoRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  style={{ display: 'none' }}
+                  onChange={handleFotoChange}
+                />
+
+                {uploadError && (
+                  <p style={{ fontSize: '12px', color: '#FF4D4D', margin: '0 0 10px', textAlign: 'center' }}>
+                    {uploadError}
+                  </p>
+                )}
 
                 {/* Confirm */}
                 <button

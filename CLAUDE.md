@@ -89,7 +89,8 @@ Cast query results with `as unknown as MyType[]` to override the inferred type.
 // Results arrive as: row.almacenes and row.almacenes_destino
 ```
 
-**env vars**: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (not ANON_KEY).
+**env vars**: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (not ANON_KEY).  
+`ANTHROPIC_API_KEY` (server-only, used by `/api/ia/procesar-documento`). If absent, the route returns `{ modo: 'sin_api_key' }` and the UI allows manual entry.
 
 ### Stock is always mutated via RPC
 
@@ -153,4 +154,4 @@ Use `crypto.randomUUID()` to pre-generate the product ID before insert so the st
 - ✅ Gestión de empleados con creación de usuarios vía API
 - ✅ Configuración con tasa BCV y alertas email
 - ✅ Modo Auditoría completo con Realtime y panel trabajador
-- ⏳ Cámara + IA (leer facturas)
+- ✅ Cámara + IA (leer facturas) — HubCaptura, EscanerFactura, ConfirmacionIA, Route Handler Claude API

@@ -2,9 +2,6 @@ import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
-console.log('Secret key present:', !!process.env.SUPABASE_SECRET_KEY)
-console.log('Secret key starts with:', process.env.SUPABASE_SECRET_KEY?.substring(0, 15))
-
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SECRET_KEY!

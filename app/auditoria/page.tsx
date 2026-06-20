@@ -107,6 +107,7 @@ export default async function AuditoriaWorkerPage() {
       auditoria={auditoriaActiva as AuditoriaActivaTrabajador}
       items={items}
       userId={user.id}
+      empresaId={perfil.empresa_id as string}
     />
   )
 }

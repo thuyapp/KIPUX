@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { X, Minus, Plus } from 'lucide-react'
+import { X, Minus, Plus, Camera, Trash2 } from 'lucide-react'
 
 type ProductoModal = {
   id: string
@@ -26,6 +26,9 @@ export default function StockModal({ producto, almacenId, almacenNombre, tipo, o
   const [justificacion, setJustificacion] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [fotoFile, setFotoFile] = useState<File | null>(null)
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null)
+  const fotoInputRef = useRef<HTMLInputElement>(null)
 
   const nuevaCantidad = tipo === 'ingreso'
     ? producto.stock_actual + cantidad
@@ -43,12 +46,27 @@ export default function StockModal({ producto, almacenId, almacenNombre, tipo, o
     setLoading(true)
     setError('')
     const supabase = createClient()
+
+    let fotoUrl: string | undefined
+    if (fotoFile) {
+      const ext = fotoFile.name.split('.').pop() ?? 'jpg'
+      const path = `${producto.id}/evidencias/${Date.now()}.${ext}`
+      const { error: uploadErr } = await supabase.storage
+        .from('productos')
+        .upload(path, fotoFile, { upsert: true })
+      if (!uploadErr) {
+        const { data: urlData } = supabase.storage.from('productos').getPublicUrl(path)
+        fotoUrl = urlData.publicUrl
+      }
+    }
+
     const { error: rpcError } = await supabase.rpc('registrar_movimiento', {
       p_producto_id: producto.id,
       p_almacen_id: almacenId,
       p_tipo: tipo,
       p_cantidad: cantidad,
       p_nota: justificacion,
+      ...(fotoUrl ? { p_foto: fotoUrl } : {}),
     })
     setLoading(false)
     if (rpcError) {
@@ -194,6 +212,60 @@ export default function StockModal({ producto, almacenId, almacenNombre, tipo, o
           <p style={{ fontSize: '12px', color: justificacion.length >= 10 ? '#00D7A7' : '#6B6B6B', marginTop: '4px' }}>
             {justificacion.length} / mín. 10 caracteres
           </p>
+        </div>
+
+        {/* Foto de evidencia */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: '#111111', marginBottom: '8px' }}>
+            Foto de evidencia <span style={{ color: '#6B6B6B', fontWeight: 400 }}>(opcional)</span>
+          </label>
+          {fotoPreview ? (
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <img
+                src={fotoPreview}
+                alt="Evidencia"
+                style={{ width: '96px', height: '96px', borderRadius: '12px', objectFit: 'cover', border: '1px solid #E8E8E8', display: 'block' }}
+              />
+              <button
+                onClick={() => { setFotoFile(null); setFotoPreview(null) }}
+                style={{
+                  position: 'absolute', top: '-6px', right: '-6px',
+                  background: '#FF4D4D', border: 'none', borderRadius: '50%',
+                  width: '22px', height: '22px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF',
+                }}
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => fotoInputRef.current?.click()}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '9px 16px', border: '1px dashed #E8E8E8', borderRadius: '10px',
+                background: '#F8F6EA', cursor: 'pointer', fontSize: '13px', color: '#6B6B6B',
+                fontFamily: 'inherit',
+              }}
+            >
+              <Camera size={16} /> Adjuntar foto
+            </button>
+          )}
+          <input
+            ref={fotoInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: 'none' }}
+            onChange={e => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              setFotoFile(file)
+              const reader = new FileReader()
+              reader.onload = ev => setFotoPreview(ev.target?.result as string)
+              reader.readAsDataURL(file)
+            }}
+          />
         </div>
 
         {error && (
