@@ -1,18 +1,8 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getSession } from '@/lib/supabase/session'
 import HubCaptura from './components/HubCaptura'
 
 export default async function CamaraPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: perfil } = await supabase
-    .from('perfiles')
-    .select('empresa_id')
-    .eq('id', user.id)
-    .single()
-  const empresaId = perfil?.empresa_id as string
+  const { supabase, empresaId } = await getSession()
 
   const { data: almacenes } = await supabase
     .from('almacenes')

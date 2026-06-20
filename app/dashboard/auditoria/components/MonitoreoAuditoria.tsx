@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Activity } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { formatFecha } from '@/lib/utils'
 import type { Auditoria, EmpleadoRef } from '../page'
 
 type AuditoriaItem = {
@@ -16,13 +17,6 @@ type Props = {
   empleados: EmpleadoRef[]
   onFinalizada: () => void
   onCancelada: () => void
-}
-
-function formatFecha(iso: string) {
-  return new Date(iso).toLocaleString('es-ES', {
-    day: 'numeric', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
 }
 
 export default function MonitoreoAuditoria({ auditoriaActiva, empleados, onFinalizada, onCancelada }: Props) {

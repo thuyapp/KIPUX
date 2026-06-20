@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { Minus, Plus, Camera, CheckCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { formatFecha } from '@/lib/utils'
 import type { AuditoriaItemTrabajador, AuditoriaActivaTrabajador } from '../page'
 import ProductoNoListado from './ProductoNoListado'
 
@@ -11,12 +12,6 @@ type Props = {
   items: AuditoriaItemTrabajador[]
   userId: string
   empresaId: string
-}
-
-function formatFecha(iso: string) {
-  return new Date(iso).toLocaleDateString('es-ES', {
-    day: 'numeric', month: 'short', year: 'numeric',
-  })
 }
 
 export default function ConteoProductos({ auditoria, items: initialItems, userId, empresaId }: Props) {

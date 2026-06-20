@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Bell, Search, Camera, Plus, Minus, Package, Edit2, Warehouse, X } from 'lucide-react'
 import StockModal from './StockModal'
 
@@ -17,7 +18,7 @@ export type Producto = {
 }
 
 type AlmacenRef = { id: string; nombre: string } | null
-type Filtro = 'todos' | 'bajo_stock' | 'agotados'
+type FiltroEstado = 'todos' | 'saludable' | 'bajo' | 'agotado'
 type ModalState = { producto: Producto; tipo: 'ingreso' | 'retiro' } | null
 
 function getStockBadge(p: Producto) {
@@ -41,7 +42,9 @@ export default function ProductList({
 }) {
   const router = useRouter()
   const [busqueda, setBusqueda] = useState('')
-  const [filtro, setFiltro] = useState<Filtro>('todos')
+  const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos')
+  const [filtroCategoria, setFiltroCategoria] = useState('')
+  const [filtroAlmacen, setFiltroAlmacen] = useState('')
   const [modal, setModal] = useState<ModalState>(null)
 
   const efectivoAlmacen: AlmacenRef = almacenFiltro
@@ -53,13 +56,22 @@ export default function ProductList({
   const stockBajoCount = productos.filter(p => p.stock_actual > 0 && p.stock_actual <= p.stock_minimo).length
   const agotadosCount = productos.filter(p => p.stock_actual === 0).length
 
+  const categoriasUnicas = Array.from(
+    new Set(
+      productos.map(p => p.categorias?.nombre).filter((c): c is string => !!c)
+    )
+  ).sort()
+
   const productosFiltrados = productos
     .filter(p => p.nombre.toLowerCase().includes(busqueda.toLowerCase()))
     .filter(p => {
-      if (filtro === 'bajo_stock') return p.stock_actual > 0 && p.stock_actual <= p.stock_minimo
-      if (filtro === 'agotados') return p.stock_actual === 0
+      if (filtroEstado === 'saludable') return p.stock_actual > p.stock_minimo
+      if (filtroEstado === 'bajo') return p.stock_actual > 0 && p.stock_actual <= p.stock_minimo
+      if (filtroEstado === 'agotado') return p.stock_actual === 0
       return true
     })
+    .filter(p => !filtroCategoria || p.categorias?.nombre === filtroCategoria)
+    .filter(p => !filtroAlmacen)
 
   function handleSuccess() {
     setModal(null)
@@ -73,11 +85,19 @@ export default function ProductList({
     { label: 'Agotados', value: String(agotadosCount) },
   ]
 
-  const filtros: { key: Filtro; label: string }[] = [
+  const estadoPills: { key: FiltroEstado; label: string }[] = [
     { key: 'todos', label: 'Todos' },
-    { key: 'bajo_stock', label: 'Bajo stock' },
-    { key: 'agotados', label: 'Agotados' },
+    { key: 'saludable', label: 'Saludable' },
+    { key: 'bajo', label: 'Bajo stock' },
+    { key: 'agotado', label: 'Agotado' },
   ]
+
+  const selectStyle: React.CSSProperties = {
+    background: '#FFFFFF', border: '1px solid #E8E8E8',
+    borderRadius: '8px', padding: '8px 12px',
+    fontSize: '13px', color: '#111111', fontFamily: 'inherit',
+    cursor: 'pointer', outline: 'none', flex: 1,
+  }
 
   return (
     <div style={{ background: '#F8F6EA', minHeight: '100vh', fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)' }}>
@@ -156,22 +176,61 @@ export default function ProductList({
         </div>
 
         {/* Filtros */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-          {filtros.map(f => (
-            <button
-              key={f.key}
-              onClick={() => setFiltro(f.key)}
-              style={{
-                padding: '8px 16px', borderRadius: '100px',
-                border: filtro === f.key ? 'none' : '1px solid #E8E8E8',
-                background: filtro === f.key ? '#F4C400' : '#FFFFFF',
-                color: '#111111', fontWeight: filtro === f.key ? 600 : 400,
-                cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit',
-              }}
+        <div style={{ marginBottom: '20px' }}>
+          {/* Mobile: pills en scroll, dropdowns en fila debajo */}
+          {/* Desktop: todo en una sola fila via md:flex */}
+          <div className="md:flex md:items-center md:gap-3">
+
+            {/* Pills de estado */}
+            <div style={{
+              display: 'flex', gap: '6px',
+              overflowX: 'auto', paddingBottom: '2px', flexShrink: 0,
+            }}>
+              {estadoPills.map(pill => (
+                <button
+                  key={pill.key}
+                  onClick={() => setFiltroEstado(pill.key)}
+                  style={{
+                    padding: '6px 14px', borderRadius: '999px', whiteSpace: 'nowrap',
+                    border: filtroEstado === pill.key ? 'none' : '1px solid #E8E8E8',
+                    background: filtroEstado === pill.key ? '#111111' : '#FFFFFF',
+                    color: filtroEstado === pill.key ? '#FFFFFF' : '#111111',
+                    fontWeight: filtroEstado === pill.key ? 600 : 400,
+                    cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit',
+                    flexShrink: 0,
+                  }}
+                >
+                  {pill.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Dropdowns — 2 columnas en mobile, inline en desktop */}
+            <div
+              className="md:ml-auto"
+              style={{ display: 'flex', gap: '8px', marginTop: '10px' }}
             >
-              {f.label}
-            </button>
-          ))}
+              <select
+                value={filtroCategoria}
+                onChange={e => setFiltroCategoria(e.target.value)}
+                style={selectStyle}
+              >
+                <option value="">Todas las categorías</option>
+                {categoriasUnicas.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+
+              <select
+                value={filtroAlmacen}
+                onChange={e => setFiltroAlmacen(e.target.value)}
+                style={selectStyle}
+              >
+                <option value="">Todos los almacenes</option>
+              </select>
+            </div>
+
+          </div>
         </div>
 
         {/* Banner de almacén filtrado */}
@@ -216,13 +275,18 @@ export default function ProductList({
             {productosFiltrados.map(producto => {
               const badge = getStockBadge(producto)
               return (
-                <div
+                <Link
                   key={producto.id}
+                  href={`/inventario/${producto.id}`}
+                  style={{ textDecoration: 'none', display: 'block' }}
+                >
+                <div
                   style={{
                     background: '#FFFFFF', border: '1px solid #E8E8E8',
                     borderRadius: '16px', padding: '16px',
                     display: 'flex', alignItems: 'center', gap: '14px',
                     boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+                    cursor: 'pointer',
                   }}
                 >
                   {/* Foto / Placeholder */}
@@ -271,25 +335,26 @@ export default function ProductList({
                   {/* Botones – y + y editar */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                     <button
-                      onClick={() => setModal({ producto, tipo: 'retiro' })}
+                      onClick={e => { e.stopPropagation(); e.preventDefault(); setModal({ producto, tipo: 'retiro' }) }}
                       style={{ width: '40px', height: '40px', borderRadius: '50%', border: '1px solid #E8E8E8', background: '#F8F6EA', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111111' }}
                     >
                       <Minus size={16} />
                     </button>
                     <button
-                      onClick={() => setModal({ producto, tipo: 'ingreso' })}
+                      onClick={e => { e.stopPropagation(); e.preventDefault(); setModal({ producto, tipo: 'ingreso' }) }}
                       style={{ width: '40px', height: '40px', borderRadius: '50%', border: 'none', background: '#F4C400', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111111' }}
                     >
                       <Plus size={16} />
                     </button>
                     <button
-                      onClick={() => router.push(`/dashboard/productos/${producto.id}/editar`)}
+                      onClick={e => { e.stopPropagation(); e.preventDefault(); router.push(`/dashboard/productos/${producto.id}/editar`) }}
                       style={{ width: '40px', height: '40px', borderRadius: '50%', border: '1px solid #E8E8E8', background: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6B6B' }}
                     >
                       <Edit2 size={15} />
                     </button>
                   </div>
                 </div>
+                </Link>
               )
             })}
           </div>

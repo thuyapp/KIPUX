@@ -1,5 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { getSession } from '@/lib/supabase/session'
 import AlmacenesList from './components/AlmacenesList'
 
 export type Almacen = {
@@ -17,18 +16,7 @@ export type Almacen = {
 }
 
 export default async function AlmacenesPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: perfil } = await supabase
-    .from('perfiles')
-    .select('empresa_id')
-    .eq('id', user.id)
-    .single()
-  if (!perfil) redirect('/login')
-
-  const empresaId = perfil.empresa_id as string
+  const { supabase, empresaId } = await getSession()
 
   const { data: almacenesRaw } = await supabase
     .from('almacenes')

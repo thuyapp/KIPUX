@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { getSession } from '@/lib/supabase/session'
 import { redirect } from 'next/navigation'
 import ConfiguracionForm from './components/ConfiguracionForm'
 
@@ -27,19 +27,8 @@ export type ConfigAlertas = {
 }
 
 export default async function ConfiguracionPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: perfil } = await supabase
-    .from('perfiles')
-    .select('nombre, rol, empresa_id')
-    .eq('id', user.id)
-    .single()
-  if (!perfil) redirect('/login')
-  if (perfil.rol !== 'admin') redirect('/dashboard')
-
-  const empresaId = perfil.empresa_id as string
+  const { supabase, user, empresaId, rol } = await getSession()
+  if (rol !== 'admin') redirect('/dashboard')
 
   const [
     { data: empresaRaw },

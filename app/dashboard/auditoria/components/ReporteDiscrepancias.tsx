@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { formatFecha } from '@/lib/utils'
 
 type AuditoriaOption = {
   id: string
@@ -35,12 +36,6 @@ type ProductoExtra = {
 type Props = {
   empresaId: string
   initialAuditoriaId: string | null
-}
-
-function formatFecha(iso: string) {
-  return new Date(iso).toLocaleDateString('es-ES', {
-    day: 'numeric', month: 'short', year: 'numeric',
-  })
 }
 
 export default function ReporteDiscrepancias({ empresaId, initialAuditoriaId }: Props) {

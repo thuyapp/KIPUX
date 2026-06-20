@@ -1,23 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { getSession } from '@/lib/supabase/session'
 import MovimientosList from './components/MovimientosList'
 import type { Movimiento } from './components/MovimientosList'
 
 export default async function MovimientosPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
-
-  const { data: perfil } = await supabase
-    .from('perfiles')
-    .select('empresa_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!perfil) redirect('/login')
-
-  const empresaId = perfil.empresa_id as string
+  const { supabase, empresaId } = await getSession()
 
   const [{ data: movimientosRaw }, { data: almacenes }] = await Promise.all([
     supabase

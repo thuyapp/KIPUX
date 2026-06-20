@@ -3,10 +3,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Package, Plus, ArrowLeftRight, Menu, Tag, Warehouse, Users, Settings, ClipboardList, Camera } from 'lucide-react'
+import { Home, Package, Plus, ArrowLeftRight, Menu, Tag, Warehouse, Users, Settings, ClipboardList } from 'lucide-react'
 
 const moreItems = [
-  { label: 'Cámara IA', href: '/dashboard/camara', icon: Camera },
   { label: 'Categorías', href: '/dashboard/categorias', icon: Tag },
   { label: 'Almacenes', href: '/dashboard/almacenes', icon: Warehouse },
   { label: 'Empleados', href: '/dashboard/empleados', icon: Users },
@@ -20,6 +19,7 @@ export default function BottomNav() {
 
   function isActive(href: string): boolean {
     if (href === '/dashboard') return pathname === '/dashboard'
+    if (href === '/inventario') return pathname === '/inventario' || pathname.startsWith('/inventario/')
     return pathname === href || pathname.startsWith(href + '/')
   }
 
@@ -84,7 +84,7 @@ export default function BottomNav() {
         </Link>
 
         {/* Inventario */}
-        <Link href="/dashboard" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', color: tabColor('/dashboard'), textDecoration: 'none', flex: 1, padding: '8px 0' }}>
+        <Link href="/inventario" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', color: tabColor('/inventario'), textDecoration: 'none', flex: 1, padding: '8px 0' }}>
           <Package size={22} />
           <span style={{ fontSize: '10px', fontWeight: 500 }}>Inventario</span>
         </Link>

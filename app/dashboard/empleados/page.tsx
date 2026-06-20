@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { getSession } from '@/lib/supabase/session'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import EmpleadosList from './components/EmpleadosList'
@@ -16,19 +16,8 @@ export type Empleado = {
 export type AlmacenRef = { id: string; nombre: string }
 
 export default async function EmpleadosPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: perfil } = await supabase
-    .from('perfiles')
-    .select('nombre, rol, empresa_id')
-    .eq('id', user.id)
-    .single()
-  if (!perfil) redirect('/login')
-  if (perfil.rol !== 'admin') redirect('/dashboard')
-
-  const empresaId = perfil.empresa_id as string
+  const { supabase, user, empresaId, rol } = await getSession()
+  if (rol !== 'admin') redirect('/dashboard')
 
   const supabaseAdmin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

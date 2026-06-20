@@ -2,13 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Package, ArrowLeftRight, Tag, Warehouse, Users, Settings, ClipboardList, Camera } from 'lucide-react'
+import { Home, Package, ArrowLeftRight, Tag, Warehouse, Users, Settings, ClipboardList } from 'lucide-react'
 
 const navItems = [
   { label: 'Inicio', href: '/dashboard', icon: Home },
-  { label: 'Inventario', href: '/dashboard', icon: Package },
+  { label: 'Inventario', href: '/inventario', icon: Package },
   { label: 'Movimientos', href: '/dashboard/movimientos', icon: ArrowLeftRight },
-  { label: 'Cámara IA', href: '/dashboard/camara', icon: Camera },
   { label: 'Categorías', href: '/dashboard/categorias', icon: Tag },
   { label: 'Almacenes', href: '/dashboard/almacenes', icon: Warehouse },
   { label: 'Empleados', href: '/dashboard/empleados', icon: Users },
@@ -26,6 +25,7 @@ export default function Sidebar({ nombreUsuario, rol }: Props) {
 
   function isActive(href: string): boolean {
     if (href === '/dashboard') return pathname === '/dashboard'
+    if (href === '/inventario') return pathname === '/inventario' || pathname.startsWith('/inventario/')
     return pathname === href || pathname.startsWith(href + '/')
   }
 

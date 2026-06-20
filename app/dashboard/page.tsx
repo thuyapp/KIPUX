@@ -1,105 +1,316 @@
-import { createClient } from '@/lib/supabase/server'
+import { getSession } from '@/lib/supabase/session'
 import { redirect } from 'next/navigation'
-import ProductList from './components/ProductList'
-import type { Producto } from './components/ProductList'
+import Link from 'next/link'
+import {
+  Package,
+  ArrowDownLeft,
+  ArrowUpRight,
+  ArrowLeftRight,
+  CheckCircle,
+  ClipboardList,
+} from 'lucide-react'
 
-type StockRow = {
+type ProductoCritico = {
+  id: string
+  nombre: string
   stock_actual: number
-  productos: {
-    id: string
-    nombre: string
-    foto_url: string | null
-    stock_minimo: number
-    unidad: string
-    costo_usd: number
-    activo: boolean
-    categorias: { nombre: string } | null
-  } | null
+  stock_minimo: number
+  foto_url: string | null
 }
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ almacen?: string }>
-}) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+type MovimientoHoy = {
+  id: string
+  tipo: 'ingreso' | 'retiro' | 'transferencia' | 'ajuste'
+  cantidad: number
+  created_at: string
+  productos: { nombre: string } | null
+  perfiles: { nombre: string } | null
+}
 
-  if (!user) redirect('/login')
+type AuditoriaActiva = {
+  id: string
+  estado: string
+  notas: string | null
+  auditoria_items: { id: string; estado: string }[]
+}
 
-  const { data: perfil } = await supabase
-    .from('perfiles')
-    .select('nombre, rol, empresa_id')
-    .eq('id', user.id)
-    .single()
+function formatHora(iso: string) {
+  return new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+}
 
-  if (!perfil) redirect('/login')
-  if (perfil.rol === 'trabajador') redirect('/auditoria')
+export default async function DashboardPage() {
+  const { supabase, empresaId, nombre: nombreUsuario, rol } = await getSession()
+  if (rol === 'trabajador') redirect('/auditoria')
 
-  const empresaId = perfil.empresa_id as string
-  const { almacen: almacenFiltro } = await searchParams
+  const hoy = new Date()
+  hoy.setHours(0, 0, 0, 0)
 
-  if (almacenFiltro) {
-    const [{ data: stockRaw }, { data: almacenInfo }] = await Promise.all([
-      supabase
-        .from('stock_por_almacen')
-        .select(`
-          stock_actual,
-          productos (
-            id, nombre, foto_url, stock_minimo, unidad, costo_usd, activo,
-            categorias ( nombre )
-          )
-        `)
-        .eq('almacen_id', almacenFiltro)
-        .eq('empresa_id', empresaId),
-      supabase
-        .from('almacenes')
-        .select('id, nombre')
-        .eq('id', almacenFiltro)
-        .single(),
-    ])
-
-    const productos = ((stockRaw ?? []) as unknown as StockRow[])
-      .filter(row => row.productos?.activo)
-      .map(row => ({
-        ...row.productos!,
-        stock_actual: row.stock_actual,
-      })) as unknown as Producto[]
-
-    return (
-      <ProductList
-        productos={productos}
-        almacenDefault={almacenInfo ?? null}
-        nombreUsuario={perfil.nombre ?? 'Admin'}
-        almacenFiltro={almacenFiltro}
-        almacenNombreFiltro={almacenInfo?.nombre}
-      />
-    )
-  }
-
-  const [{ data: productosRaw }, { data: almacenDefault }] = await Promise.all([
+  const [
+    { data: productosCriticosRaw },
+    { data: movimientosRaw },
+    { data: auditoriaRaw },
+  ] = await Promise.all([
     supabase
       .from('productos')
-      .select(`
-        id, nombre, foto_url, stock_actual, stock_minimo, unidad, costo_usd,
-        categorias ( nombre )
-      `)
+      .select('id, nombre, stock_actual, stock_minimo, foto_url')
       .eq('empresa_id', empresaId)
       .eq('activo', true)
-      .order('nombre'),
+      .or('stock_actual.eq.0,stock_actual.lte.stock_minimo')
+      .order('stock_actual', { ascending: true })
+      .limit(6),
     supabase
-      .from('almacenes')
-      .select('id, nombre')
+      .from('movimientos')
+      .select('id, tipo, cantidad, created_at, productos(nombre), perfiles(nombre)')
       .eq('empresa_id', empresaId)
-      .eq('es_default', true)
+      .gte('created_at', hoy.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(5),
+    supabase
+      .from('auditorias')
+      .select('id, estado, notas, auditoria_items(id, estado)')
+      .eq('empresa_id', empresaId)
+      .eq('estado', 'activa')
+      .limit(1)
       .single(),
   ])
 
+  const productosCriticos = (productosCriticosRaw ?? []) as ProductoCritico[]
+  const movimientos = (movimientosRaw ?? []) as unknown as MovimientoHoy[]
+  const auditoria = auditoriaRaw as unknown as AuditoriaActiva | null
+
+  const hora = new Date().getHours()
+  const saludo = hora < 12 ? 'Buenos días,' : 'Buenas tardes,'
+
+  const totalItems = auditoria?.auditoria_items?.length ?? 0
+  const contadosItems = auditoria?.auditoria_items?.filter(i => i.estado !== 'pendiente').length ?? 0
+  const progPct = totalItems > 0 ? Math.round((contadosItems / totalItems) * 100) : 0
+
   return (
-    <ProductList
-      productos={(productosRaw ?? []) as unknown as Producto[]}
-      almacenDefault={almacenDefault ?? null}
-      nombreUsuario={perfil.nombre ?? 'Admin'}
-    />
+    <div
+      style={{
+        padding: '24px 20px',
+        maxWidth: '720px',
+        margin: '0 auto',
+        fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)',
+      }}
+    >
+      {/* Header */}
+      <div style={{ marginBottom: '32px' }}>
+        <p style={{ fontSize: '14px', color: '#6B6B6B', margin: '0 0 4px' }}>{saludo}</p>
+        <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#111111', margin: '0 0 4px' }}>
+          {nombreUsuario}
+        </h1>
+        <p style={{ fontSize: '14px', color: '#6B6B6B', margin: 0 }}>
+          Aquí tienes el resumen de tu inventario
+        </p>
+      </div>
+
+      {/* Sección 1 — Atención requerida */}
+      <div style={{ marginBottom: '32px' }}>
+        <p style={{
+          fontSize: '16px', fontWeight: 600, color: '#111111',
+          margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: '8px',
+        }}>
+          {productosCriticos.length > 0 && (
+            <span style={{ color: '#FF4D4D', fontSize: '12px', lineHeight: 1 }}>●</span>
+          )}
+          Atención requerida
+        </p>
+
+        {productosCriticos.length === 0 ? (
+          <div style={{
+            background: '#E8FBF5', borderRadius: '16px', padding: '20px',
+            display: 'flex', alignItems: 'center', gap: '12px',
+          }}>
+            <CheckCircle size={24} color="#00A67E" />
+            <span style={{ fontSize: '14px', fontWeight: 500, color: '#00A67E' }}>
+              Todo el inventario está saludable
+            </span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {productosCriticos.map(p => {
+              const agotado = p.stock_actual === 0
+              return (
+                <Link key={p.id} href="/inventario" style={{ textDecoration: 'none' }}>
+                  <div style={{
+                    background: '#FFFFFF', borderRadius: '16px',
+                    padding: '14px 16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                  }}>
+                    {p.foto_url ? (
+                      <img
+                        src={p.foto_url}
+                        alt={p.nombre}
+                        style={{
+                          width: '48px', height: '48px', borderRadius: '8px',
+                          objectFit: 'cover', flexShrink: 0,
+                        }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '48px', height: '48px', borderRadius: '8px',
+                        background: '#F0F0F0', flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <Package size={20} color="#AAAAAA" />
+                      </div>
+                    )}
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        marginBottom: '4px', flexWrap: 'wrap',
+                      }}>
+                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#111111' }}>
+                          {p.nombre}
+                        </span>
+                        {agotado ? (
+                          <span style={{
+                            fontSize: '11px', fontWeight: 600, padding: '2px 8px',
+                            borderRadius: '100px', background: '#FFE8E8', color: '#FF4D4D',
+                          }}>
+                            Agotado
+                          </span>
+                        ) : (
+                          <span style={{
+                            fontSize: '11px', fontWeight: 600, padding: '2px 8px',
+                            borderRadius: '100px', background: '#FFF8E0', color: '#B8860B',
+                          }}>
+                            Bajo stock
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ fontSize: '13px', color: '#6B6B6B', margin: 0 }}>
+                        Stock: {p.stock_actual} unidades · Mínimo: {p.stock_minimo} unidades
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Sección 2 — Actividad de hoy */}
+      <div style={{ marginBottom: '32px' }}>
+        <p style={{ fontSize: '16px', fontWeight: 600, color: '#111111', margin: '0 0 12px' }}>
+          Actividad de hoy
+        </p>
+
+        <div style={{
+          background: '#FFFFFF', borderRadius: '16px',
+          padding: '4px 0', boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        }}>
+          {movimientos.length === 0 ? (
+            <p style={{ fontSize: '14px', color: '#6B6B6B', padding: '20px 16px', margin: 0 }}>
+              Sin movimientos registrados hoy
+            </p>
+          ) : (
+            movimientos.map((m, idx) => {
+              const isIngreso = m.tipo === 'ingreso'
+              const isRetiro = m.tipo === 'retiro'
+
+              const iconBg = isIngreso ? '#E8FBF5' : isRetiro ? '#FFE8E8' : '#FFF8E0'
+              const iconColor = isIngreso ? '#00D7A7' : isRetiro ? '#FF4D4D' : '#F4C400'
+              const cantidadColor = isIngreso ? '#00D7A7' : isRetiro ? '#FF4D4D' : '#F4C400'
+              const cantidadPrefix = isIngreso ? '+' : isRetiro ? '-' : ''
+              const IconMov = isIngreso ? ArrowDownLeft : isRetiro ? ArrowUpRight : ArrowLeftRight
+
+              return (
+                <div
+                  key={m.id}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '12px 16px',
+                    borderTop: idx > 0 ? '1px solid #F5F5F5' : 'none',
+                  }}
+                >
+                  <div style={{
+                    width: '36px', height: '36px', borderRadius: '50%',
+                    background: iconBg, flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <IconMov size={16} color={iconColor} />
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{
+                      fontSize: '14px', fontWeight: 600, color: '#111111',
+                      margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {m.productos?.nombre ?? '—'}
+                    </p>
+                    <p style={{ fontSize: '13px', color: '#6B6B6B', margin: '2px 0 0' }}>
+                      {m.perfiles?.nombre ?? 'Sistema'}
+                    </p>
+                  </div>
+
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <p style={{ fontSize: '15px', fontWeight: 700, color: cantidadColor, margin: 0 }}>
+                      {cantidadPrefix}{m.cantidad}
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#6B6B6B', margin: '2px 0 0' }}>
+                      {formatHora(m.created_at)}
+                    </p>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Sección 3 — Auditoría en curso (solo si existe) */}
+      {auditoria && (
+        <div style={{ marginBottom: '32px' }}>
+          <p style={{ fontSize: '16px', fontWeight: 600, color: '#111111', margin: '0 0 12px' }}>
+            Auditoría en curso
+          </p>
+          <div style={{
+            background: '#F8F6EA', borderRadius: '16px', padding: '20px',
+            borderLeft: '4px solid #F4C400',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+              <ClipboardList size={20} color="#F4C400" />
+              <span style={{ fontSize: '15px', fontWeight: 600, color: '#111111' }}>
+                Auditoría activa
+              </span>
+            </div>
+
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ fontSize: '13px', color: '#6B6B6B' }}>
+                  {contadosItems} de {totalItems} productos contados
+                </span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#111111' }}>
+                  {progPct}%
+                </span>
+              </div>
+              <div style={{ height: '6px', background: '#E8E8E8', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', background: '#F4C400', borderRadius: '3px',
+                  width: `${progPct}%`,
+                }} />
+              </div>
+            </div>
+
+            <Link
+              href="/dashboard/auditoria"
+              style={{
+                display: 'inline-block', marginTop: '10px',
+                padding: '8px 18px', borderRadius: '999px',
+                background: '#111111', color: '#FFFFFF',
+                textDecoration: 'none', fontSize: '13px', fontWeight: 600,
+              }}
+            >
+              Ver progreso
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
