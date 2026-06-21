@@ -240,45 +240,53 @@ export default function ProductList({
           </button>
         </div>
 
-        {/* KPI cards — rediseñadas */}
+        {/* KPI cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4" style={{ marginBottom: '24px' }}>
           {/* Total productos */}
-          <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-              <Package size={20} color="#6366F1" />
+          <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Package size={24} color="#6366F1" />
             </div>
-            <p style={{ fontSize: '13px', color: '#6B6B6B', margin: '0 0 4px' }}>Total productos</p>
-            <p style={{ fontSize: '32px', fontWeight: 700, color: '#111111', margin: '0 0 4px', lineHeight: 1 }}>{totalProductos}</p>
-            <p style={{ fontSize: '13px', color: '#00A67E', margin: 0 }}>↑ {nuevosEstaSemana} nuevos esta semana</p>
+            <div>
+              <p style={{ fontSize: '13px', color: '#6B6B6B', margin: 0 }}>Total productos</p>
+              <p style={{ fontSize: '28px', fontWeight: 700, color: '#111111', margin: '2px 0' }}>{totalProductos}</p>
+              <p style={{ fontSize: '13px', color: '#00A67E', margin: 0 }}>↑ {nuevosEstaSemana} nuevos esta semana</p>
+            </div>
           </div>
           {/* Valor inventario */}
-          <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#FEF9C3', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-              <DollarSign size={20} color="#EAB308" />
+          <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#FEF9C3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <DollarSign size={24} color="#EAB308" />
             </div>
-            <p style={{ fontSize: '13px', color: '#6B6B6B', margin: '0 0 4px' }}>Valor inventario</p>
-            <p style={{ fontSize: '32px', fontWeight: 700, color: '#111111', margin: '0 0 4px', lineHeight: 1 }}>
-              ${valorTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </p>
-            <p style={{ fontSize: '13px', color: '#6B6B6B', margin: 0 }}>en stock actual</p>
+            <div>
+              <p style={{ fontSize: '13px', color: '#6B6B6B', margin: 0 }}>Valor inventario</p>
+              <p style={{ fontSize: '28px', fontWeight: 700, color: '#111111', margin: '2px 0' }}>
+                ${valorTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p style={{ fontSize: '13px', color: '#6B6B6B', margin: 0 }}>en stock actual</p>
+            </div>
           </div>
           {/* Bajo stock */}
-          <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-              <AlertTriangle size={20} color="#EF4444" />
+          <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <AlertTriangle size={24} color="#EF4444" />
             </div>
-            <p style={{ fontSize: '13px', color: '#6B6B6B', margin: '0 0 4px' }}>Bajo stock</p>
-            <p style={{ fontSize: '32px', fontWeight: 700, color: '#EF4444', margin: '0 0 4px', lineHeight: 1 }}>{stockBajoCount}</p>
-            <Link href="/inventario?estado=bajo" style={{ fontSize: '13px', color: '#EF4444', textDecoration: 'none' }}>Ver productos →</Link>
+            <div>
+              <p style={{ fontSize: '13px', color: '#6B6B6B', margin: 0 }}>Bajo stock</p>
+              <p style={{ fontSize: '28px', fontWeight: 700, color: '#EF4444', margin: '2px 0' }}>{stockBajoCount}</p>
+              <Link href="/inventario?estado=bajo" style={{ fontSize: '13px', color: '#EF4444', textDecoration: 'none' }}>Ver productos →</Link>
+            </div>
           </div>
           {/* Agotados */}
-          <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-              <ShoppingBag size={20} color="#EF4444" />
+          <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <ShoppingBag size={24} color="#EF4444" />
             </div>
-            <p style={{ fontSize: '13px', color: '#6B6B6B', margin: '0 0 4px' }}>Agotados</p>
-            <p style={{ fontSize: '32px', fontWeight: 700, color: '#EF4444', margin: '0 0 4px', lineHeight: 1 }}>{agotadosCount}</p>
-            <Link href="/inventario?estado=agotado" style={{ fontSize: '13px', color: '#EF4444', textDecoration: 'none' }}>Ver productos →</Link>
+            <div>
+              <p style={{ fontSize: '13px', color: '#6B6B6B', margin: 0 }}>Agotados</p>
+              <p style={{ fontSize: '28px', fontWeight: 700, color: '#EF4444', margin: '2px 0' }}>{agotadosCount}</p>
+              <Link href="/inventario?estado=agotado" style={{ fontSize: '13px', color: '#EF4444', textDecoration: 'none' }}>Ver productos →</Link>
+            </div>
           </div>
         </div>
 
@@ -420,10 +428,7 @@ export default function ProductList({
                           <span style={{ fontSize: '13px', color: '#6B6B6B' }}>{producto.categorias?.nombre ?? 'Sin categoría'}</span>
                           <span style={{ background: badge.bg, color: badge.color, fontSize: '10px', fontWeight: 600, padding: '1px 7px', borderRadius: '100px', flexShrink: 0 }}>{badge.label}</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <p style={{ fontSize: '13px', color: '#6B6B6B', margin: 0 }}>{producto.stock_actual} {producto.unidad}</p>
-                          <Tendencia mov={producto.ultimoMovimiento} />
-                        </div>
+                        <p style={{ fontSize: '13px', color: '#6B6B6B', margin: 0 }}>{producto.stock_actual} {producto.unidad}</p>
                       </div>
                       {/* Derecha */}
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
