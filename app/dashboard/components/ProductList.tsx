@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Bell, Search, Camera, Plus, Package, Edit2, Warehouse, X, Scan } from 'lucide-react'
+import { Bell, Search, Camera, Plus, Package, Edit2, Warehouse, X, Scan, ChevronDown } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import StockModal from './StockModal'
 
@@ -49,6 +49,11 @@ export default function ProductList({
   const [almacenesDB, setAlmacenesDB] = useState<{ id: string; nombre: string }[]>([])
   const [modal, setModal] = useState<ModalState>(null)
   const [mostrarPanelAcciones, setMostrarPanelAcciones] = useState(false)
+  const [mostrarDropCategoria, setMostrarDropCategoria] = useState(false)
+  const [mostrarDropAlmacen, setMostrarDropAlmacen] = useState(false)
+
+  const dropCatRef = useRef<HTMLDivElement>(null)
+  const dropAlmRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -59,6 +64,16 @@ export default function ProductList({
     function handleAbrirPanel() { setMostrarPanelAcciones(true) }
     window.addEventListener('abrir-panel-acciones', handleAbrirPanel)
     return () => window.removeEventListener('abrir-panel-acciones', handleAbrirPanel)
+  }, [])
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      const target = e.target as Node
+      if (!dropCatRef.current?.contains(target)) setMostrarDropCategoria(false)
+      if (!dropAlmRef.current?.contains(target)) setMostrarDropAlmacen(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   const efectivoAlmacen: AlmacenRef = almacenFiltro
@@ -118,18 +133,28 @@ export default function ProductList({
     { key: 'agotado', label: 'Agotado' },
   ]
 
-  const chipStyle = (active: boolean): React.CSSProperties => ({
+  const pillStyle = (active: boolean): React.CSSProperties => ({
     padding: '6px 14px',
     borderRadius: '999px',
     whiteSpace: 'nowrap',
     border: active ? 'none' : '1px solid #E8E8E8',
     background: active ? '#111111' : '#FFFFFF',
     color: active ? '#FFFFFF' : '#111111',
+    fontWeight: active ? 600 : 400,
     fontSize: '13px',
     cursor: 'pointer',
     fontFamily: 'inherit',
     flexShrink: 0,
   })
+
+  const dropTriggerStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: '6px',
+    padding: '8px 14px', borderRadius: '8px',
+    border: '1px solid #E8E8E8', background: '#FFFFFF',
+    color: '#111111', fontSize: '13px',
+    cursor: 'pointer', fontFamily: 'inherit',
+    whiteSpace: 'nowrap', flexShrink: 0,
+  }
 
   return (
     <div style={{ background: '#F8F6EA', minHeight: '100vh', fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)' }}>
@@ -226,50 +251,101 @@ export default function ProductList({
           />
         </div>
 
-        {/* Filtros */}
-        <div style={{ marginBottom: '20px' }}>
-          {/* Estado pills */}
-          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', marginBottom: '8px' }}>
-            {estadoPills.map(pill => (
-              <button
-                key={pill.key}
-                onClick={() => setFiltroEstado(pill.key)}
-                style={chipStyle(filtroEstado === pill.key)}
-              >
-                {pill.label}
-              </button>
-            ))}
+        {/* Filtros — una sola fila con scroll horizontal */}
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '20px', alignItems: 'center' }}>
+          {estadoPills.map(pill => (
+            <button
+              key={pill.key}
+              onClick={() => setFiltroEstado(pill.key)}
+              style={pillStyle(filtroEstado === pill.key)}
+            >
+              {pill.label}
+            </button>
+          ))}
+
+          {/* Dropdown categorías */}
+          <div ref={dropCatRef} style={{ position: 'relative', flexShrink: 0 }}>
+            <button
+              onClick={() => { setMostrarDropCategoria(v => !v); setMostrarDropAlmacen(false) }}
+              style={dropTriggerStyle}
+            >
+              {categoriasSeleccionadas.length > 0
+                ? `Categorías (${categoriasSeleccionadas.length})`
+                : 'Categorías'}
+              <ChevronDown size={14} />
+            </button>
+            {mostrarDropCategoria && categoriasUnicas.length > 0 && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 50,
+                background: '#FFFFFF', borderRadius: '12px',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                padding: '8px', minWidth: '180px',
+              }}>
+                {categoriasUnicas.map(cat => (
+                  <div
+                    key={cat}
+                    onClick={() => toggleCategoria(cat)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '9px 12px', borderRadius: '8px', cursor: 'pointer',
+                      background: categoriasSeleccionadas.includes(cat) ? '#F8F6EA' : 'transparent',
+                      fontSize: '13px', color: '#111111',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      readOnly
+                      checked={categoriasSeleccionadas.includes(cat)}
+                      style={{ accentColor: '#111111', cursor: 'pointer', flexShrink: 0 }}
+                    />
+                    {cat}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Categoría chips */}
-          {categoriasUnicas.length > 0 && (
-            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', marginBottom: '8px' }}>
-              {categoriasUnicas.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => toggleCategoria(cat)}
-                  style={chipStyle(categoriasSeleccionadas.includes(cat))}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Almacén chips */}
-          {almacenesDB.length > 0 && (
-            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
-              {almacenesDB.map(alm => (
-                <button
-                  key={alm.id}
-                  onClick={() => toggleAlmacen(alm.id)}
-                  style={chipStyle(almacenesSeleccionados.includes(alm.id))}
-                >
-                  {alm.nombre}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Dropdown almacenes */}
+          <div ref={dropAlmRef} style={{ position: 'relative', flexShrink: 0 }}>
+            <button
+              onClick={() => { setMostrarDropAlmacen(v => !v); setMostrarDropCategoria(false) }}
+              style={dropTriggerStyle}
+            >
+              {almacenesSeleccionados.length > 0
+                ? `Almacenes (${almacenesSeleccionados.length})`
+                : 'Almacenes'}
+              <ChevronDown size={14} />
+            </button>
+            {mostrarDropAlmacen && almacenesDB.length > 0 && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 50,
+                background: '#FFFFFF', borderRadius: '12px',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                padding: '8px', minWidth: '180px',
+              }}>
+                {almacenesDB.map(alm => (
+                  <div
+                    key={alm.id}
+                    onClick={() => toggleAlmacen(alm.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '9px 12px', borderRadius: '8px', cursor: 'pointer',
+                      background: almacenesSeleccionados.includes(alm.id) ? '#F8F6EA' : 'transparent',
+                      fontSize: '13px', color: '#111111',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      readOnly
+                      checked={almacenesSeleccionados.includes(alm.id)}
+                      style={{ accentColor: '#111111', cursor: 'pointer', flexShrink: 0 }}
+                    />
+                    {alm.nombre}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Banner de almacén filtrado */}
@@ -322,45 +398,43 @@ export default function ProductList({
                   <div
                     style={{
                       background: '#FFFFFF', border: '1px solid #E8E8E8',
-                      borderRadius: '16px', padding: '16px',
-                      display: 'flex', alignItems: 'center', gap: '14px',
+                      borderRadius: '16px', padding: '14px 16px',
+                      display: 'flex', flexDirection: 'column', gap: '10px',
                       boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
                       cursor: 'pointer',
                     }}
                   >
-                    {/* Foto / Placeholder */}
-                    {producto.foto_url ? (
-                      <img
-                        src={producto.foto_url}
-                        alt={producto.nombre}
-                        style={{ width: '56px', height: '56px', borderRadius: '12px', objectFit: 'cover', flexShrink: 0 }}
-                      />
-                    ) : (
-                      <div style={{
-                        width: '56px', height: '56px', borderRadius: '12px', flexShrink: 0,
-                        background: '#F4C400', color: '#111111',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontWeight: 700, fontSize: '22px',
-                      }}>
-                        {producto.nombre[0].toUpperCase()}
+                    {/* Fila superior: foto + nombre/categoría */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                      {producto.foto_url ? (
+                        <img
+                          src={producto.foto_url}
+                          alt={producto.nombre}
+                          style={{ width: '44px', height: '44px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: '44px', height: '44px', borderRadius: '10px', flexShrink: 0,
+                          background: '#F4C400', color: '#111111',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontWeight: 700, fontSize: '18px',
+                        }}>
+                          {producto.nombre[0].toUpperCase()}
+                        </div>
+                      )}
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontWeight: 600, color: '#111111', margin: '0 0 2px', lineHeight: 1.3 }}>
+                          {producto.nombre}
+                        </p>
+                        <p style={{ fontSize: '13px', color: '#6B6B6B', margin: 0 }}>
+                          {producto.categorias?.nombre ?? 'Sin categoría'}
+                        </p>
                       </div>
-                    )}
+                    </div>
 
-                    {/* Info */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{
-                        fontWeight: 600, color: '#111111', margin: '0 0 2px',
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>
-                        {producto.nombre}
-                      </p>
-                      <p style={{ fontSize: '13px', color: '#6B6B6B', margin: '0 0 6px' }}>
-                        {producto.categorias?.nombre ?? 'Sin categoría'}
-                      </p>
+                    {/* Fila inferior: badge + stock | botones */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 500, color: '#111111' }}>
-                          {producto.stock_actual} {producto.unidad}
-                        </span>
                         <span style={{
                           background: badge.bg, color: badge.color,
                           fontSize: '11px', fontWeight: 600,
@@ -368,42 +442,43 @@ export default function ProductList({
                         }}>
                           {badge.label}
                         </span>
+                        <span style={{ fontSize: '13px', fontWeight: 500, color: '#111111' }}>
+                          {producto.stock_actual} {producto.unidad}
+                        </span>
                       </div>
-                    </div>
-
-                    {/* Botones Entrada / Salida / Editar */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                      <button
-                        onClick={e => { e.stopPropagation(); e.preventDefault(); setModal({ producto, tipo: 'ingreso' }) }}
-                        style={{
-                          padding: '6px 14px', borderRadius: '999px', border: 'none',
-                          background: '#00D7A7', color: '#FFFFFF',
-                          fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit',
-                        }}
-                      >
-                        Entrada
-                      </button>
-                      <button
-                        onClick={e => { e.stopPropagation(); e.preventDefault(); setModal({ producto, tipo: 'retiro' }) }}
-                        style={{
-                          padding: '6px 14px', borderRadius: '999px', border: 'none',
-                          background: '#FF4D4D', color: '#FFFFFF',
-                          fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit',
-                        }}
-                      >
-                        Salida
-                      </button>
-                      <button
-                        onClick={e => { e.stopPropagation(); e.preventDefault(); router.push(`/dashboard/productos/${producto.id}/editar`) }}
-                        style={{
-                          width: '40px', height: '40px', borderRadius: '50%',
-                          border: '1px solid #E8E8E8', background: '#FFFFFF',
-                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          color: '#6B6B6B',
-                        }}
-                      >
-                        <Edit2 size={15} />
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <button
+                          onClick={e => { e.stopPropagation(); e.preventDefault(); setModal({ producto, tipo: 'ingreso' }) }}
+                          style={{
+                            padding: '5px 10px', borderRadius: '999px', border: 'none',
+                            background: '#00D7A7', color: '#FFFFFF',
+                            fontWeight: 600, fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit',
+                          }}
+                        >
+                          Entrada
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); e.preventDefault(); setModal({ producto, tipo: 'retiro' }) }}
+                          style={{
+                            padding: '5px 10px', borderRadius: '999px', border: 'none',
+                            background: '#FF4D4D', color: '#FFFFFF',
+                            fontWeight: 600, fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit',
+                          }}
+                        >
+                          Salida
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); e.preventDefault(); router.push(`/dashboard/productos/${producto.id}/editar`) }}
+                          style={{
+                            width: '32px', height: '32px', borderRadius: '50%',
+                            border: '1px solid #E8E8E8', background: '#FFFFFF',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: '#6B6B6B',
+                          }}
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </Link>
