@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Package, ArrowLeftRight, Tag, Warehouse, Users, Settings, ClipboardList, BarChart3 } from 'lucide-react'
+import { Home, Package, ArrowLeftRight, Tag, Warehouse, Users, Settings, ClipboardList } from 'lucide-react'
 
 const navItems = [
   { label: 'Inicio', href: '/dashboard', icon: Home },
@@ -50,64 +50,29 @@ export default function Sidebar({ nombreUsuario, rol }: Props) {
         {navItems.map(item => {
           const active = isActive(item.href)
           const Icon = item.icon
-          const isAuditoria = item.label === 'Auditoría'
           return (
-            <div key={item.label}>
-              <Link
-                href={item.href}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '10px 12px',
-                  borderRadius: '10px',
-                  marginBottom: '2px',
-                  textDecoration: 'none',
-                  color: active ? '#F4C400' : '#A0A0A0',
-                  background: active ? 'rgba(244,196,0,0.10)' : 'transparent',
-                  borderLeft: active ? '3px solid #F4C400' : '3px solid transparent',
-                  fontSize: '14px',
-                  fontWeight: active ? 600 : 400,
-                  transition: 'color 0.15s',
-                }}
-              >
-                <Icon size={18} />
-                {item.label}
-              </Link>
-              {isAuditoria && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '10px 12px',
-                    borderRadius: '10px',
-                    marginBottom: '2px',
-                    color: '#A0A0A0',
-                    background: 'transparent',
-                    borderLeft: '3px solid transparent',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    opacity: 0.5,
-                    cursor: 'not-allowed',
-                  }}
-                >
-                  <BarChart3 size={18} />
-                  Reportes
-                  <span style={{
-                    marginLeft: 'auto',
-                    background: '#F4C400',
-                    color: '#111111',
-                    fontSize: '10px',
-                    fontWeight: 600,
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                  }}>
-                    Pronto
-                  </span>
-                </div>
-              )}
-            </div>
+            <Link
+              key={item.label}
+              href={item.href}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '10px 12px',
+                borderRadius: '10px',
+                marginBottom: '2px',
+                textDecoration: 'none',
+                color: active ? '#F4C400' : '#A0A0A0',
+                background: active ? 'rgba(244,196,0,0.10)' : 'transparent',
+                borderLeft: active ? '3px solid #F4C400' : '3px solid transparent',
+                fontSize: '14px',
+                fontWeight: active ? 600 : 400,
+                transition: 'color 0.15s',
+              }}
+            >
+              <Icon size={18} />
+              {item.label}
+            </Link>
           )
         })}
       </nav>

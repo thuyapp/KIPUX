@@ -7,7 +7,6 @@ import {
   Bell, Search, Plus, Package, Edit2, Warehouse, X,
   Scan, ChevronDown, RotateCcw, Upload, PlusCircle, TrendingUp,
   DollarSign, AlertTriangle, ShoppingBag,
-  BarChart3, Pencil, MoreVertical, Calendar,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import StockModal from './StockModal'
@@ -40,14 +39,6 @@ export type ProductoConMovimiento = Producto & {
 type AlmacenRef = { id: string; nombre: string } | null
 type FiltroEstado = 'todos' | 'saludable' | 'bajo' | 'agotado'
 type ModalState = { producto: Producto; tipo: 'ingreso' | 'retiro' } | null
-
-function hexToRgba(hex: string | null | undefined, alpha: number): string {
-  if (!hex || hex.length < 7) return `rgba(107, 107, 107, ${alpha})`
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`
-}
 
 function getStockBadge(p: Producto) {
   if (p.stock_actual === 0) return { label: 'Agotado', bg: '#FF4D4D', color: '#FFFFFF' }
@@ -234,8 +225,8 @@ export default function ProductList({
     <div style={{ background: '#F8F6EA', minHeight: '100vh', fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)' }}>
       <div style={{ maxWidth: '800px', margin: '0 auto', padding: '28px 16px 100px' }}>
 
-        {/* Saludo + acciones header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', gap: '12px' }}>
+        {/* Saludo */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
           <div>
             <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#111111', margin: '0 0 4px' }}>
               Hola, {nombreUsuario} 👋
@@ -244,26 +235,9 @@ export default function ProductList({
               Tu inventario está bajo control.
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-            {/* Selector fecha (decorativo) */}
-            <button style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '999px', border: '1px solid #E8E8E8', background: '#FFFFFF', color: '#111111', fontSize: '13px', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-              <Calendar size={14} color="#6B6B6B" />
-              Hoy
-              <ChevronDown size={13} color="#6B6B6B" />
-            </button>
-            {/* Nuevo producto desktop */}
-            <button
-              onClick={() => router.push('/dashboard/productos/nuevo')}
-              className="hidden md:flex"
-              style={{ alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '999px', border: 'none', background: '#F4C400', color: '#111111', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
-            >
-              + Nuevo producto
-            </button>
-            {/* Campana */}
-            <button style={{ width: '42px', height: '42px', borderRadius: '50%', border: '1px solid #E8E8E8', background: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111111', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', flexShrink: 0 }}>
-              <Bell size={18} />
-            </button>
-          </div>
+          <button style={{ width: '42px', height: '42px', borderRadius: '50%', border: '1px solid #E8E8E8', background: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111111', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', flexShrink: 0 }}>
+            <Bell size={18} />
+          </button>
         </div>
 
         {/* KPI cards — rediseñadas */}
@@ -423,7 +397,7 @@ export default function ProductList({
         ) : (
           <>
             {/* ── MÓVIL: tarjetas ── */}
-            <div className="flex flex-col md:hidden" style={{ gap: '10px' }}>
+            <div className="md:hidden" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {productosFiltrados.map(producto => {
                 const badge = getStockBadge(producto)
                 const valorTotalP = (producto.costo_usd * producto.stock_actual).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -473,7 +447,7 @@ export default function ProductList({
                 <thead>
                   <tr style={{ background: '#F8F6EA' }}>
                     {['Producto', 'Categoría', 'Stock', 'Estado', 'Valor', 'Acciones'].map(col => (
-                      <th key={col} style={{ padding: '14px 16px', textAlign: col === 'Valor' || col === 'Acciones' ? 'right' : 'left', fontSize: '11px', color: '#6B6B6B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
+                      <th key={col} style={{ padding: '10px 16px', textAlign: col === 'Valor' || col === 'Acciones' ? 'right' : 'left', fontSize: '12px', color: '#6B6B6B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
                         {col}
                       </th>
                     ))}
@@ -493,94 +467,50 @@ export default function ProductList({
                         onMouseLeave={e => (e.currentTarget.style.background = '')}
                       >
                         {/* Producto */}
-                        <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+                        <td style={{ padding: '12px 16px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             {producto.foto_url ? (
-                              <img src={producto.foto_url} alt={producto.nombre} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} />
+                              <img src={producto.foto_url} alt={producto.nombre} style={{ width: '44px', height: '44px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />
                             ) : (
-                              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#F0F0F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '16px', color: '#6B6B6B', flexShrink: 0 }}>
+                              <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: '#F0F0F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '18px', color: '#6B6B6B', flexShrink: 0 }}>
                                 {producto.nombre[0].toUpperCase()}
                               </div>
                             )}
                             <div>
-                              <div style={{ fontWeight: 600, color: '#111111', fontSize: '14px' }}>{producto.nombre}</div>
-                              <div style={{ fontSize: '12px', color: '#6B6B6B', marginTop: '2px' }}>
-                                {producto.sku ? `${producto.sku} · ` : ''}{producto.categorias?.nombre ?? ''}
-                              </div>
+                              <p style={{ fontWeight: 600, fontSize: '14px', color: '#111111', margin: '0 0 2px' }}>{producto.nombre}</p>
+                              {producto.sku && <p style={{ fontSize: '12px', color: '#6B6B6B', margin: 0 }}>{producto.sku}</p>}
                             </div>
                           </div>
                         </td>
                         {/* Categoría */}
-                        <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
-                          {producto.categorias ? (
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                              <div style={{
-                                width: '28px', height: '28px', borderRadius: '8px',
-                                background: hexToRgba(producto.categorias.color, 0.15),
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '14px', flexShrink: 0,
-                              }}>
-                                {producto.categorias.icono ?? '📦'}
-                              </div>
-                              <span style={{ color: '#111111', fontSize: '14px' }}>{producto.categorias.nombre}</span>
-                            </div>
-                          ) : (
-                            <span style={{ color: '#6B6B6B', fontSize: '14px' }}>—</span>
-                          )}
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {producto.categorias?.icono && <span>{producto.categorias.icono}</span>}
+                            <span style={{ fontSize: '13px', color: '#6B6B6B' }}>{producto.categorias?.nombre ?? '—'}</span>
+                          </div>
                         </td>
                         {/* Stock */}
-                        <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
-                          <div>
-                            <div style={{ fontWeight: 600, color: '#111111', fontSize: '14px' }}>
-                              {producto.stock_actual}{' '}
-                              <span style={{ fontSize: '13px', color: '#6B6B6B', fontWeight: 400 }}>
-                                {producto.unidad}{producto.stock_actual !== 1 ? 's' : ''}
-                              </span>
-                            </div>
-                            {producto.ultimoMovimiento && (
-                              <Tendencia mov={producto.ultimoMovimiento} />
-                            )}
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '14px', fontWeight: 500, color: '#111111' }}>{producto.stock_actual} {producto.unidad}</span>
+                            <Tendencia mov={producto.ultimoMovimiento} />
                           </div>
                         </td>
                         {/* Estado */}
-                        <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+                        <td style={{ padding: '12px 16px' }}>
                           <span style={{ background: badge.bg, color: badge.color, fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '100px' }}>{badge.label}</span>
                         </td>
                         {/* Valor */}
-                        <td style={{ padding: '14px 16px', textAlign: 'right', verticalAlign: 'middle' }}>
-                          <div style={{ fontWeight: 700, fontSize: '14px', color: '#111111', marginBottom: '2px' }}>${valorTotalP}</div>
-                          <div style={{ fontSize: '12px', color: '#6B6B6B' }}>${precioU} c/u</div>
+                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                          <p style={{ fontWeight: 700, fontSize: '14px', color: '#111111', margin: '0 0 2px' }}>${valorTotalP}</p>
+                          <p style={{ fontSize: '12px', color: '#6B6B6B', margin: 0 }}>${precioU} c/u</p>
                         </td>
                         {/* Acciones */}
-                        <td style={{ padding: '14px 16px', textAlign: 'right', verticalAlign: 'middle' }}>
+                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
-                            <button
-                              title="Ajustar stock"
-                              onClick={e => { e.stopPropagation(); setModal({ producto, tipo: 'ingreso' }) }}
-                              style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E8E8E8', background: '#FFFFFF', color: '#6B6B6B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                              onMouseEnter={e => (e.currentTarget.style.background = '#F8F6EA')}
-                              onMouseLeave={e => (e.currentTarget.style.background = '#FFFFFF')}
-                            >
-                              <BarChart3 size={16} />
-                            </button>
-                            <button
-                              title="Editar"
-                              onClick={e => { e.stopPropagation(); router.push(`/dashboard/productos/${producto.id}/editar`) }}
-                              style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E8E8E8', background: '#FFFFFF', color: '#6B6B6B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                              onMouseEnter={e => (e.currentTarget.style.background = '#F8F6EA')}
-                              onMouseLeave={e => (e.currentTarget.style.background = '#FFFFFF')}
-                            >
-                              <Pencil size={16} />
-                            </button>
-                            <button
-                              title="Más opciones"
-                              onClick={e => e.stopPropagation()}
-                              style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E8E8E8', background: '#FFFFFF', color: '#6B6B6B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                              onMouseEnter={e => (e.currentTarget.style.background = '#F8F6EA')}
-                              onMouseLeave={e => (e.currentTarget.style.background = '#FFFFFF')}
-                            >
-                              <MoreVertical size={16} />
-                            </button>
+                            <button onClick={e => { e.stopPropagation(); setModal({ producto, tipo: 'ingreso' }) }} style={{ padding: '6px 14px', borderRadius: '999px', border: 'none', background: '#111111', color: '#FFFFFF', fontWeight: 600, fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>Entrada</button>
+                            <button onClick={e => { e.stopPropagation(); setModal({ producto, tipo: 'retiro' }) }} style={{ padding: '6px 14px', borderRadius: '999px', border: 'none', background: '#FF4D4D', color: '#FFFFFF', fontWeight: 600, fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>Salida</button>
+                            <button onClick={e => { e.stopPropagation(); router.push(`/dashboard/productos/${producto.id}/editar`) }} style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #E8E8E8', background: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6B6B' }}><Edit2 size={14} /></button>
                           </div>
                         </td>
                       </tr>
