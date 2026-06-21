@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Bell, Search, Camera, Plus, Minus, Package, Edit2, Warehouse, X } from 'lucide-react'
+import { Bell, Search, Camera, Plus, Package, Edit2, Warehouse, X, Scan } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import StockModal from './StockModal'
 
 export type Producto = {
@@ -43,9 +44,22 @@ export default function ProductList({
   const router = useRouter()
   const [busqueda, setBusqueda] = useState('')
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos')
-  const [filtroCategoria, setFiltroCategoria] = useState('')
-  const [filtroAlmacen, setFiltroAlmacen] = useState('')
+  const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState<string[]>([])
+  const [almacenesSeleccionados, setAlmacenesSeleccionados] = useState<string[]>([])
+  const [almacenesDB, setAlmacenesDB] = useState<{ id: string; nombre: string }[]>([])
   const [modal, setModal] = useState<ModalState>(null)
+  const [mostrarPanelAcciones, setMostrarPanelAcciones] = useState(false)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.from('almacenes').select('id, nombre').eq('activo', true).then(({ data }) => {
+      if (data) setAlmacenesDB(data)
+    })
+
+    function handleAbrirPanel() { setMostrarPanelAcciones(true) }
+    window.addEventListener('abrir-panel-acciones', handleAbrirPanel)
+    return () => window.removeEventListener('abrir-panel-acciones', handleAbrirPanel)
+  }, [])
 
   const efectivoAlmacen: AlmacenRef = almacenFiltro
     ? { id: almacenFiltro, nombre: almacenNombreFiltro ?? '' }
@@ -70,12 +84,24 @@ export default function ProductList({
       if (filtroEstado === 'agotado') return p.stock_actual === 0
       return true
     })
-    .filter(p => !filtroCategoria || p.categorias?.nombre === filtroCategoria)
-    .filter(p => !filtroAlmacen)
+    .filter(p => categoriasSeleccionadas.length === 0 || categoriasSeleccionadas.includes(p.categorias?.nombre ?? ''))
+    .filter(() => almacenesSeleccionados.length === 0)
 
   function handleSuccess() {
     setModal(null)
     router.refresh()
+  }
+
+  function toggleCategoria(cat: string) {
+    setCategoriasSeleccionadas(prev =>
+      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    )
+  }
+
+  function toggleAlmacen(id: string) {
+    setAlmacenesSeleccionados(prev =>
+      prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]
+    )
   }
 
   const summaryCards = [
@@ -92,18 +118,24 @@ export default function ProductList({
     { key: 'agotado', label: 'Agotado' },
   ]
 
-  const selectStyle: React.CSSProperties = {
-    background: '#FFFFFF', border: '1px solid #E8E8E8',
-    borderRadius: '8px', padding: '8px 12px',
-    fontSize: '13px', color: '#111111', fontFamily: 'inherit',
-    cursor: 'pointer', outline: 'none', flex: 1,
-  }
+  const chipStyle = (active: boolean): React.CSSProperties => ({
+    padding: '6px 14px',
+    borderRadius: '999px',
+    whiteSpace: 'nowrap',
+    border: active ? 'none' : '1px solid #E8E8E8',
+    background: active ? '#111111' : '#FFFFFF',
+    color: active ? '#FFFFFF' : '#111111',
+    fontSize: '13px',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    flexShrink: 0,
+  })
 
   return (
     <div style={{ background: '#F8F6EA', minHeight: '100vh', fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)' }}>
       <div style={{ maxWidth: '800px', margin: '0 auto', padding: '28px 16px 100px' }}>
 
-        {/* Header */}
+        {/* Saludo */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
           <div>
             <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#111111', margin: '0 0 4px' }}>
@@ -143,6 +175,36 @@ export default function ProductList({
           ))}
         </div>
 
+        {/* Header inventario */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#111111', margin: 0 }}>Inventario</h2>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => router.push('/dashboard/camara')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '10px 18px', borderRadius: '999px', border: 'none',
+                background: '#111111', color: '#FFFFFF',
+                fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              <Scan size={16} />
+              Carga masiva
+            </button>
+            <button
+              onClick={() => router.push('/dashboard/productos/nuevo')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '10px 18px', borderRadius: '999px', border: 'none',
+                background: '#F4C400', color: '#111111',
+                fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              + Nuevo producto
+            </button>
+          </div>
+        </div>
+
         {/* Buscador */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: '10px',
@@ -164,73 +226,50 @@ export default function ProductList({
           />
         </div>
 
-        {/* Botón Nuevo producto */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
-          <button
-            onClick={() => router.push('/dashboard/productos/nuevo')}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', borderRadius: '100px', border: 'none', background: '#F4C400', color: '#111111', fontWeight: 600, cursor: 'pointer', fontSize: '14px', fontFamily: 'inherit' }}
-          >
-            <Plus size={16} />
-            Nuevo producto
-          </button>
-        </div>
-
         {/* Filtros */}
         <div style={{ marginBottom: '20px' }}>
-          {/* Mobile: pills en scroll, dropdowns en fila debajo */}
-          {/* Desktop: todo en una sola fila via md:flex */}
-          <div className="md:flex md:items-center md:gap-3">
+          {/* Estado pills */}
+          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', marginBottom: '8px' }}>
+            {estadoPills.map(pill => (
+              <button
+                key={pill.key}
+                onClick={() => setFiltroEstado(pill.key)}
+                style={chipStyle(filtroEstado === pill.key)}
+              >
+                {pill.label}
+              </button>
+            ))}
+          </div>
 
-            {/* Pills de estado */}
-            <div style={{
-              display: 'flex', gap: '6px',
-              overflowX: 'auto', paddingBottom: '2px', flexShrink: 0,
-            }}>
-              {estadoPills.map(pill => (
+          {/* Categoría chips */}
+          {categoriasUnicas.length > 0 && (
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', marginBottom: '8px' }}>
+              {categoriasUnicas.map(cat => (
                 <button
-                  key={pill.key}
-                  onClick={() => setFiltroEstado(pill.key)}
-                  style={{
-                    padding: '6px 14px', borderRadius: '999px', whiteSpace: 'nowrap',
-                    border: filtroEstado === pill.key ? 'none' : '1px solid #E8E8E8',
-                    background: filtroEstado === pill.key ? '#111111' : '#FFFFFF',
-                    color: filtroEstado === pill.key ? '#FFFFFF' : '#111111',
-                    fontWeight: filtroEstado === pill.key ? 600 : 400,
-                    cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit',
-                    flexShrink: 0,
-                  }}
+                  key={cat}
+                  onClick={() => toggleCategoria(cat)}
+                  style={chipStyle(categoriasSeleccionadas.includes(cat))}
                 >
-                  {pill.label}
+                  {cat}
                 </button>
               ))}
             </div>
+          )}
 
-            {/* Dropdowns — 2 columnas en mobile, inline en desktop */}
-            <div
-              className="md:ml-auto"
-              style={{ display: 'flex', gap: '8px', marginTop: '10px' }}
-            >
-              <select
-                value={filtroCategoria}
-                onChange={e => setFiltroCategoria(e.target.value)}
-                style={selectStyle}
-              >
-                <option value="">Todas las categorías</option>
-                {categoriasUnicas.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-
-              <select
-                value={filtroAlmacen}
-                onChange={e => setFiltroAlmacen(e.target.value)}
-                style={selectStyle}
-              >
-                <option value="">Todos los almacenes</option>
-              </select>
+          {/* Almacén chips */}
+          {almacenesDB.length > 0 && (
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
+              {almacenesDB.map(alm => (
+                <button
+                  key={alm.id}
+                  onClick={() => toggleAlmacen(alm.id)}
+                  style={chipStyle(almacenesSeleccionados.includes(alm.id))}
+                >
+                  {alm.nombre}
+                </button>
+              ))}
             </div>
-
-          </div>
+          )}
         </div>
 
         {/* Banner de almacén filtrado */}
@@ -280,80 +319,93 @@ export default function ProductList({
                   href={`/inventario/${producto.id}`}
                   style={{ textDecoration: 'none', display: 'block' }}
                 >
-                <div
-                  style={{
-                    background: '#FFFFFF', border: '1px solid #E8E8E8',
-                    borderRadius: '16px', padding: '16px',
-                    display: 'flex', alignItems: 'center', gap: '14px',
-                    boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {/* Foto / Placeholder */}
-                  {producto.foto_url ? (
-                    <img
-                      src={producto.foto_url}
-                      alt={producto.nombre}
-                      style={{ width: '56px', height: '56px', borderRadius: '12px', objectFit: 'cover', flexShrink: 0 }}
-                    />
-                  ) : (
-                    <div style={{
-                      width: '56px', height: '56px', borderRadius: '12px', flexShrink: 0,
-                      background: '#F4C400', color: '#111111',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 700, fontSize: '22px',
-                    }}>
-                      {producto.nombre[0].toUpperCase()}
-                    </div>
-                  )}
-
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{
-                      fontWeight: 600, color: '#111111', margin: '0 0 2px',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}>
-                      {producto.nombre}
-                    </p>
-                    <p style={{ fontSize: '13px', color: '#6B6B6B', margin: '0 0 6px' }}>
-                      {producto.categorias?.nombre ?? 'Sin categoría'}
-                    </p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '14px', fontWeight: 500, color: '#111111' }}>
-                        {producto.stock_actual} {producto.unidad}
-                      </span>
-                      <span style={{
-                        background: badge.bg, color: badge.color,
-                        fontSize: '11px', fontWeight: 600,
-                        padding: '2px 8px', borderRadius: '100px',
+                  <div
+                    style={{
+                      background: '#FFFFFF', border: '1px solid #E8E8E8',
+                      borderRadius: '16px', padding: '16px',
+                      display: 'flex', alignItems: 'center', gap: '14px',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {/* Foto / Placeholder */}
+                    {producto.foto_url ? (
+                      <img
+                        src={producto.foto_url}
+                        alt={producto.nombre}
+                        style={{ width: '56px', height: '56px', borderRadius: '12px', objectFit: 'cover', flexShrink: 0 }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '56px', height: '56px', borderRadius: '12px', flexShrink: 0,
+                        background: '#F4C400', color: '#111111',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 700, fontSize: '22px',
                       }}>
-                        {badge.label}
-                      </span>
+                        {producto.nombre[0].toUpperCase()}
+                      </div>
+                    )}
+
+                    {/* Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{
+                        fontWeight: 600, color: '#111111', margin: '0 0 2px',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>
+                        {producto.nombre}
+                      </p>
+                      <p style={{ fontSize: '13px', color: '#6B6B6B', margin: '0 0 6px' }}>
+                        {producto.categorias?.nombre ?? 'Sin categoría'}
+                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 500, color: '#111111' }}>
+                          {producto.stock_actual} {producto.unidad}
+                        </span>
+                        <span style={{
+                          background: badge.bg, color: badge.color,
+                          fontSize: '11px', fontWeight: 600,
+                          padding: '2px 8px', borderRadius: '100px',
+                        }}>
+                          {badge.label}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Botones Entrada / Salida / Editar */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      <button
+                        onClick={e => { e.stopPropagation(); e.preventDefault(); setModal({ producto, tipo: 'ingreso' }) }}
+                        style={{
+                          padding: '6px 14px', borderRadius: '999px', border: 'none',
+                          background: '#00D7A7', color: '#FFFFFF',
+                          fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit',
+                        }}
+                      >
+                        Entrada
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); e.preventDefault(); setModal({ producto, tipo: 'retiro' }) }}
+                        style={{
+                          padding: '6px 14px', borderRadius: '999px', border: 'none',
+                          background: '#FF4D4D', color: '#FFFFFF',
+                          fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit',
+                        }}
+                      >
+                        Salida
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); e.preventDefault(); router.push(`/dashboard/productos/${producto.id}/editar`) }}
+                        style={{
+                          width: '40px', height: '40px', borderRadius: '50%',
+                          border: '1px solid #E8E8E8', background: '#FFFFFF',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#6B6B6B',
+                        }}
+                      >
+                        <Edit2 size={15} />
+                      </button>
                     </div>
                   </div>
-
-                  {/* Botones – y + y editar */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                    <button
-                      onClick={e => { e.stopPropagation(); e.preventDefault(); setModal({ producto, tipo: 'retiro' }) }}
-                      style={{ width: '40px', height: '40px', borderRadius: '50%', border: '1px solid #E8E8E8', background: '#F8F6EA', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111111' }}
-                    >
-                      <Minus size={16} />
-                    </button>
-                    <button
-                      onClick={e => { e.stopPropagation(); e.preventDefault(); setModal({ producto, tipo: 'ingreso' }) }}
-                      style={{ width: '40px', height: '40px', borderRadius: '50%', border: 'none', background: '#F4C400', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111111' }}
-                    >
-                      <Plus size={16} />
-                    </button>
-                    <button
-                      onClick={e => { e.stopPropagation(); e.preventDefault(); router.push(`/dashboard/productos/${producto.id}/editar`) }}
-                      style={{ width: '40px', height: '40px', borderRadius: '50%', border: '1px solid #E8E8E8', background: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6B6B' }}
-                    >
-                      <Edit2 size={15} />
-                    </button>
-                  </div>
-                </div>
                 </Link>
               )
             })}
@@ -363,6 +415,7 @@ export default function ProductList({
 
       {/* FAB cámara */}
       <button
+        onClick={() => router.push('/dashboard/camara')}
         style={{
           position: 'fixed', bottom: '24px', right: '24px', zIndex: 40,
           width: '64px', height: '64px', borderRadius: '50%',
@@ -412,6 +465,60 @@ export default function ProductList({
             </button>
           </div>
         </div>
+      )}
+
+      {/* Panel de acciones */}
+      {mostrarPanelAcciones && (
+        <>
+          <div
+            onClick={() => setMostrarPanelAcciones(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.4)' }}
+          />
+          <div style={{
+            position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 51,
+            background: '#FFFFFF', borderRadius: '20px 20px 0 0',
+            padding: '24px',
+            fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)',
+          }}>
+            <p style={{ fontWeight: 700, fontSize: '16px', color: '#111111', margin: '0 0 16px' }}>
+              ¿Qué quieres hacer?
+            </p>
+            <button
+              onClick={() => { setMostrarPanelAcciones(false); router.push('/dashboard/camara') }}
+              style={{
+                display: 'flex', flexDirection: 'column', width: '100%', textAlign: 'left',
+                padding: '16px', borderRadius: '12px', border: 'none',
+                background: '#111111', color: '#FFFFFF',
+                cursor: 'pointer', marginBottom: '8px', fontFamily: 'inherit',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                <Scan size={20} />
+                <span style={{ fontWeight: 600, fontSize: '15px' }}>Carga masiva</span>
+              </div>
+              <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', paddingLeft: '30px' }}>
+                Sube una factura y la IA carga los productos
+              </span>
+            </button>
+            <button
+              onClick={() => { setMostrarPanelAcciones(false); router.push('/dashboard/productos/nuevo') }}
+              style={{
+                display: 'flex', flexDirection: 'column', width: '100%', textAlign: 'left',
+                padding: '16px', borderRadius: '12px', border: 'none',
+                background: '#F4C400', color: '#111111',
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                <Plus size={20} />
+                <span style={{ fontWeight: 600, fontSize: '15px' }}>Nuevo producto</span>
+              </div>
+              <span style={{ fontSize: '13px', color: 'rgba(17,17,17,0.6)', paddingLeft: '30px' }}>
+                Agrega un producto manualmente
+              </span>
+            </button>
+          </div>
+        </>
       )}
     </div>
   )

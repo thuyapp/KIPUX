@@ -91,18 +91,18 @@ export default function BottomNav() {
 
         {/* Botón central + */}
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <Link
-            href="/dashboard/productos/nuevo"
+          <button
+            onClick={() => window.dispatchEvent(new Event('abrir-panel-acciones'))}
             style={{
               width: '48px', height: '48px', borderRadius: '50%',
               background: '#F4C400', color: '#111111',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              textDecoration: 'none', marginBottom: '10px',
+              border: 'none', cursor: 'pointer', marginBottom: '10px',
               boxShadow: '0 2px 10px rgba(244,196,0,0.45)',
             }}
           >
             <Plus size={22} />
-          </Link>
+          </button>
         </div>
 
         {/* Movimientos */}
