@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Bell, Search, Plus, Package, Edit2, Warehouse, X, Scan, ChevronDown } from 'lucide-react'
+import { Bell, Search, Plus, Package, Edit2, Warehouse, X, Scan, ChevronDown, RotateCcw, Upload, PlusCircle, TrendingUp } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import StockModal from './StockModal'
 
@@ -90,9 +90,7 @@ export default function ProductList({
   const agotadosCount = productos.filter(p => p.stock_actual === 0).length
 
   const categoriasUnicas = Array.from(
-    new Set(
-      productos.map(p => p.categorias?.nombre).filter((c): c is string => !!c)
-    )
+    new Set(productos.map(p => p.categorias?.nombre).filter((c): c is string => !!c))
   ).sort()
 
   const productosFiltrados = productos
@@ -105,6 +103,15 @@ export default function ProductList({
     })
     .filter(p => categoriasSeleccionadas.length === 0 || categoriasSeleccionadas.includes(p.categorias?.nombre ?? ''))
     .filter(() => almacenesSeleccionados.length === 0)
+
+  const hayFiltrosActivos =
+    filtroEstado !== 'todos' || categoriasSeleccionadas.length > 0 || almacenesSeleccionados.length > 0
+
+  function limpiarFiltros() {
+    setFiltroEstado('todos')
+    setCategoriasSeleccionadas([])
+    setAlmacenesSeleccionados([])
+  }
 
   function handleSuccess() {
     setModal(null)
@@ -130,25 +137,21 @@ export default function ProductList({
     { label: 'Agotados', value: String(agotadosCount) },
   ]
 
-  const estadoPills: { key: FiltroEstado; label: string }[] = [
+  const estadoPills: { key: FiltroEstado; label: string; dot?: string }[] = [
     { key: 'todos', label: 'Todos' },
-    { key: 'saludable', label: 'Saludable' },
-    { key: 'bajo', label: 'Bajo stock' },
-    { key: 'agotado', label: 'Agotado' },
+    { key: 'saludable', label: 'Saludable', dot: '#00D7A7' },
+    { key: 'bajo', label: 'Bajo stock', dot: '#F4C400' },
+    { key: 'agotado', label: 'Agotado', dot: '#FF4D4D' },
   ]
 
   const pillStyle = (active: boolean): React.CSSProperties => ({
-    padding: '6px 14px',
-    borderRadius: '999px',
-    whiteSpace: 'nowrap',
+    display: 'flex', alignItems: 'center', gap: '6px',
+    padding: '6px 14px', borderRadius: '999px', whiteSpace: 'nowrap',
     border: active ? 'none' : '1px solid #E8E8E8',
     background: active ? '#111111' : '#FFFFFF',
     color: active ? '#FFFFFF' : '#111111',
     fontWeight: active ? 600 : 400,
-    fontSize: '13px',
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    flexShrink: 0,
+    fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
   })
 
   const dropTriggerStyle: React.CSSProperties = {
@@ -258,13 +261,25 @@ export default function ProductList({
         </div>
 
         {/* Filtros — una sola fila con scroll horizontal */}
-        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '20px', alignItems: 'center' }}>
+        <div style={{
+          display: 'flex', gap: '6px', overflowX: 'auto',
+          paddingBottom: '4px', paddingRight: '16px',
+          marginBottom: '20px', alignItems: 'center',
+        }}>
+          {/* Estado pills con punto de color */}
           {estadoPills.map(pill => (
             <button
               key={pill.key}
               onClick={() => setFiltroEstado(pill.key)}
               style={pillStyle(filtroEstado === pill.key)}
             >
+              {pill.dot && (
+                <span style={{
+                  width: '8px', height: '8px', borderRadius: '50%',
+                  background: filtroEstado === pill.key ? '#FFFFFF' : pill.dot,
+                  flexShrink: 0, display: 'inline-block',
+                }} />
+              )}
               {pill.label}
             </button>
           ))}
@@ -352,6 +367,23 @@ export default function ProductList({
               </div>
             )}
           </div>
+
+          {/* Limpiar filtros */}
+          {hayFiltrosActivos && (
+            <button
+              onClick={limpiarFiltros}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '5px',
+                padding: '8px 12px', borderRadius: '8px', border: 'none',
+                background: 'transparent', color: '#6B6B6B',
+                fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit',
+                whiteSpace: 'nowrap', flexShrink: 0,
+              }}
+            >
+              <RotateCcw size={13} />
+              Limpiar filtros
+            </button>
+          )}
         </div>
 
         {/* Banner de almacén filtrado */}
@@ -395,6 +427,8 @@ export default function ProductList({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {productosFiltrados.map(producto => {
               const badge = getStockBadge(producto)
+              const valorTotal = (producto.costo_usd * producto.stock_actual).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+              const precioUnitario = producto.costo_usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
               return (
                 <Link
                   key={producto.id}
@@ -404,61 +438,67 @@ export default function ProductList({
                   <div
                     style={{
                       background: '#FFFFFF', border: '1px solid #E8E8E8',
-                      borderRadius: '16px', padding: '14px 16px',
-                      display: 'flex', flexDirection: 'column', gap: '10px',
+                      borderRadius: '16px', padding: '16px',
+                      display: 'flex', alignItems: 'center', gap: '14px',
                       boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
                       cursor: 'pointer',
                     }}
                   >
-                    {/* Fila superior: foto + nombre/categoría */}
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                      {producto.foto_url ? (
-                        <img
-                          src={producto.foto_url}
-                          alt={producto.nombre}
-                          style={{ width: '44px', height: '44px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }}
-                        />
-                      ) : (
-                        <div style={{
-                          width: '44px', height: '44px', borderRadius: '10px', flexShrink: 0,
-                          background: '#F4C400', color: '#111111',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontWeight: 700, fontSize: '18px',
-                        }}>
-                          {producto.nombre[0].toUpperCase()}
-                        </div>
-                      )}
-                      <div style={{ flex: 1 }}>
-                        <p style={{ fontWeight: 600, color: '#111111', margin: '0 0 2px', lineHeight: 1.3 }}>
-                          {producto.nombre}
-                        </p>
-                        <p style={{ fontSize: '13px', color: '#6B6B6B', margin: 0 }}>
-                          {producto.categorias?.nombre ?? 'Sin categoría'}
-                        </p>
+                    {/* Foto / Placeholder */}
+                    {producto.foto_url ? (
+                      <img
+                        src={producto.foto_url}
+                        alt={producto.nombre}
+                        style={{ width: '56px', height: '56px', borderRadius: '12px', objectFit: 'cover', flexShrink: 0 }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: '56px', height: '56px', borderRadius: '12px', flexShrink: 0,
+                        background: '#F0F0F0', color: '#6B6B6B',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 700, fontSize: '22px',
+                      }}>
+                        {producto.nombre[0].toUpperCase()}
                       </div>
-                    </div>
+                    )}
 
-                    {/* Fila inferior: badge + stock | botones */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {/* Centro: nombre, categoría+badge, stock */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: 700, fontSize: '15px', color: '#111111', margin: '0 0 3px', lineHeight: 1.3 }}>
+                        {producto.nombre}
+                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '13px', color: '#6B6B6B' }}>
+                          {producto.categorias?.nombre ?? 'Sin categoría'}
+                        </span>
                         <span style={{
                           background: badge.bg, color: badge.color,
-                          fontSize: '11px', fontWeight: 600,
-                          padding: '2px 8px', borderRadius: '100px',
+                          fontSize: '10px', fontWeight: 600,
+                          padding: '1px 7px', borderRadius: '100px', flexShrink: 0,
                         }}>
                           {badge.label}
                         </span>
-                        <span style={{ fontSize: '13px', fontWeight: 500, color: '#111111' }}>
-                          {producto.stock_actual} {producto.unidad}
-                        </span>
                       </div>
+                      <p style={{ fontSize: '13px', color: '#6B6B6B', margin: 0 }}>
+                        {producto.stock_actual} {producto.unidad}
+                      </p>
+                    </div>
+
+                    {/* Derecha: valor, precio unitario, botones */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
+                      <p style={{ fontWeight: 700, fontSize: '15px', color: '#111111', margin: 0 }}>
+                        ${valorTotal}
+                      </p>
+                      <p style={{ fontSize: '12px', color: '#6B6B6B', margin: '0 0 6px' }}>
+                        ${precioUnitario} c/u
+                      </p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <button
                           onClick={e => { e.stopPropagation(); e.preventDefault(); setModal({ producto, tipo: 'ingreso' }) }}
                           style={{
-                            padding: '5px 10px', borderRadius: '999px', border: 'none',
-                            background: '#00D7A7', color: '#FFFFFF',
-                            fontWeight: 600, fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit',
+                            padding: '6px 16px', borderRadius: '999px', border: 'none',
+                            background: '#111111', color: '#FFFFFF',
+                            fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit',
                           }}
                         >
                           Entrada
@@ -466,9 +506,9 @@ export default function ProductList({
                         <button
                           onClick={e => { e.stopPropagation(); e.preventDefault(); setModal({ producto, tipo: 'retiro' }) }}
                           style={{
-                            padding: '5px 10px', borderRadius: '999px', border: 'none',
+                            padding: '6px 16px', borderRadius: '999px', border: 'none',
                             background: '#FF4D4D', color: '#FFFFFF',
-                            fontWeight: 600, fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit',
+                            fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit',
                           }}
                         >
                           Salida
@@ -479,7 +519,7 @@ export default function ProductList({
                             width: '32px', height: '32px', borderRadius: '50%',
                             border: '1px solid #E8E8E8', background: '#FFFFFF',
                             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: '#6B6B6B',
+                            color: '#6B6B6B', flexShrink: 0,
                           }}
                         >
                           <Edit2 size={14} />
@@ -550,40 +590,69 @@ export default function ProductList({
             <p style={{ fontWeight: 700, fontSize: '16px', color: '#111111', margin: '0 0 16px' }}>
               ¿Qué quieres hacer?
             </p>
-            <button
-              onClick={() => { setMostrarPanelAcciones(false); router.push('/dashboard/camara') }}
-              style={{
-                display: 'flex', flexDirection: 'column', width: '100%', textAlign: 'left',
-                padding: '16px', borderRadius: '12px', border: 'none',
-                background: '#111111', color: '#FFFFFF',
-                cursor: 'pointer', marginBottom: '8px', fontFamily: 'inherit',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                <Scan size={20} />
-                <span style={{ fontWeight: 600, fontSize: '15px' }}>Carga masiva</span>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {/* Escanear */}
+              <button
+                onClick={() => { setMostrarPanelAcciones(false); router.push('/dashboard/camara') }}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  padding: '16px', borderRadius: '12px', border: '1px solid #E8E8E8',
+                  background: '#FFFFFF', cursor: 'pointer', fontFamily: 'inherit', gap: '10px',
+                }}
+              >
+                <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(244,196,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Scan size={22} color="#F4C400" />
+                </div>
+                <span style={{ fontWeight: 600, fontSize: '13px', color: '#111111' }}>Escanear</span>
+              </button>
+
+              {/* Subir archivo */}
+              <button
+                onClick={() => { setMostrarPanelAcciones(false); router.push('/dashboard/camara') }}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  padding: '16px', borderRadius: '12px', border: '1px solid #E8E8E8',
+                  background: '#FFFFFF', cursor: 'pointer', fontFamily: 'inherit', gap: '10px',
+                }}
+              >
+                <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(167,139,250,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Upload size={22} color="#A78BFA" />
+                </div>
+                <span style={{ fontWeight: 600, fontSize: '13px', color: '#111111' }}>Subir archivo</span>
+              </button>
+
+              {/* Nuevo producto */}
+              <button
+                onClick={() => { setMostrarPanelAcciones(false); router.push('/dashboard/productos/nuevo') }}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  padding: '16px', borderRadius: '12px', border: '1px solid #E8E8E8',
+                  background: '#FFFFFF', cursor: 'pointer', fontFamily: 'inherit', gap: '10px',
+                }}
+              >
+                <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(0,215,167,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <PlusCircle size={22} color="#00D7A7" />
+                </div>
+                <span style={{ fontWeight: 600, fontSize: '13px', color: '#111111' }}>Nuevo producto</span>
+              </button>
+
+              {/* Ver reportes — deshabilitado */}
+              <div
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  padding: '16px', borderRadius: '12px', border: '1px solid #E8E8E8',
+                  background: '#FAFAFA', gap: '10px',
+                }}
+              >
+                <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(59,130,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <TrendingUp size={22} color="#3B82F6" />
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontWeight: 600, fontSize: '13px', color: '#6B6B6B', margin: '0 0 2px' }}>Ver reportes</p>
+                  <p style={{ fontSize: '11px', color: '#AAAAAA', margin: 0 }}>Próximamente</p>
+                </div>
               </div>
-              <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', paddingLeft: '30px' }}>
-                Sube una factura y la IA carga los productos
-              </span>
-            </button>
-            <button
-              onClick={() => { setMostrarPanelAcciones(false); router.push('/dashboard/productos/nuevo') }}
-              style={{
-                display: 'flex', flexDirection: 'column', width: '100%', textAlign: 'left',
-                padding: '16px', borderRadius: '12px', border: 'none',
-                background: '#F4C400', color: '#111111',
-                cursor: 'pointer', fontFamily: 'inherit',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                <Plus size={20} />
-                <span style={{ fontWeight: 600, fontSize: '15px' }}>Nuevo producto</span>
-              </div>
-              <span style={{ fontSize: '13px', color: 'rgba(17,17,17,0.6)', paddingLeft: '30px' }}>
-                Agrega un producto manualmente
-              </span>
-            </button>
+            </div>
           </div>
         </>
       )}

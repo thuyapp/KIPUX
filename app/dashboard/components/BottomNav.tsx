@@ -95,14 +95,14 @@ export default function BottomNav() {
           <button
             onClick={() => router.push('/inventario?panel=true')}
             style={{
-              width: '48px', height: '48px', borderRadius: '50%',
+              width: '56px', height: '56px', borderRadius: '50%',
               background: '#F4C400', color: '#111111',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: 'none', cursor: 'pointer', marginBottom: '10px',
-              boxShadow: '0 2px 10px rgba(244,196,0,0.45)',
+              border: 'none', cursor: 'pointer', marginTop: '-20px',
+              boxShadow: '0 4px 12px rgba(244,196,0,0.4)',
             }}
           >
-            <Plus size={22} />
+            <Plus size={28} color="#111111" />
           </button>
         </div>
 
