@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Home, Package, Plus, ArrowLeftRight, Menu, Tag, Warehouse, Users, Settings, ClipboardList } from 'lucide-react'
 
 const moreItems = [
@@ -15,6 +15,7 @@ const moreItems = [
 
 export default function BottomNav() {
   const pathname = usePathname()
+  const router = useRouter()
   const [moreOpen, setMoreOpen] = useState(false)
 
   function isActive(href: string): boolean {
@@ -92,7 +93,7 @@ export default function BottomNav() {
         {/* Botón central + */}
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <button
-            onClick={() => window.dispatchEvent(new Event('abrir-panel-acciones'))}
+            onClick={() => router.push('/inventario?panel=true')}
             style={{
               width: '48px', height: '48px', borderRadius: '50%',
               background: '#F4C400', color: '#111111',

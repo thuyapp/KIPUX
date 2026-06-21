@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Bell, Search, Camera, Plus, Package, Edit2, Warehouse, X, Scan, ChevronDown } from 'lucide-react'
+import { Bell, Search, Plus, Package, Edit2, Warehouse, X, Scan, ChevronDown } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import StockModal from './StockModal'
 
@@ -42,6 +42,7 @@ export default function ProductList({
   almacenNombreFiltro?: string
 }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [busqueda, setBusqueda] = useState('')
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos')
   const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState<string[]>([])
@@ -60,11 +61,14 @@ export default function ProductList({
     supabase.from('almacenes').select('id, nombre').eq('activo', true).then(({ data }) => {
       if (data) setAlmacenesDB(data)
     })
-
-    function handleAbrirPanel() { setMostrarPanelAcciones(true) }
-    window.addEventListener('abrir-panel-acciones', handleAbrirPanel)
-    return () => window.removeEventListener('abrir-panel-acciones', handleAbrirPanel)
   }, [])
+
+  useEffect(() => {
+    if (searchParams.get('panel') === 'true') {
+      setMostrarPanelAcciones(true)
+      router.replace('/inventario')
+    }
+  }, [searchParams, router])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -201,13 +205,14 @@ export default function ProductList({
         </div>
 
         {/* Header inventario */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3" style={{ marginBottom: '16px' }}>
           <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#111111', margin: 0 }}>Inventario</h2>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="flex w-full md:w-auto" style={{ gap: '8px' }}>
             <button
               onClick={() => router.push('/dashboard/camara')}
+              className="flex-1 md:flex-none"
               style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                 padding: '10px 18px', borderRadius: '999px', border: 'none',
                 background: '#111111', color: '#FFFFFF',
                 fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
@@ -218,8 +223,9 @@ export default function ProductList({
             </button>
             <button
               onClick={() => router.push('/dashboard/productos/nuevo')}
+              className="flex-1 md:flex-none"
               style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                 padding: '10px 18px', borderRadius: '999px', border: 'none',
                 background: '#F4C400', color: '#111111',
                 fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
@@ -487,20 +493,6 @@ export default function ProductList({
           </div>
         )}
       </div>
-
-      {/* FAB cámara */}
-      <button
-        onClick={() => router.push('/dashboard/camara')}
-        style={{
-          position: 'fixed', bottom: '24px', right: '24px', zIndex: 40,
-          width: '64px', height: '64px', borderRadius: '50%',
-          background: '#F4C400', border: 'none', color: '#111111',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', boxShadow: '0 4px 16px rgba(244,196,0,0.4)',
-        }}
-      >
-        <Camera size={26} />
-      </button>
 
       {/* Modal de stock */}
       {modal && efectivoAlmacen && (
