@@ -35,7 +35,7 @@ export default function Sidebar({ nombreUsuario, rol }: Props) {
       style={{
         position: 'fixed', top: 0, left: 0,
         width: '240px', height: '100vh',
-        background: '#F4C400', zIndex: 30,
+        background: 'linear-gradient(180deg, #F4C400 0%, #D4A800 100%)', zIndex: 30,
       }}
     >
       {/* Logo */}
@@ -79,16 +79,14 @@ export default function Sidebar({ nombreUsuario, rol }: Props) {
       </nav>
 
       {/* Cuadro decorativo */}
-      <div style={{ padding: '0 12px 12px' }}>
-        <div style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '16px', padding: '16px' }}>
-          <Sparkles size={20} color="#111111" style={{ marginBottom: '8px' }} />
-          <p style={{ fontWeight: 700, fontSize: '13px', color: '#111111', margin: '0 0 4px' }}>
-            Mantén tu inventario al día
-          </p>
-          <p style={{ fontSize: '11px', color: '#111111', opacity: 0.7, margin: 0, lineHeight: 1.4 }}>
-            Registra tus movimientos a tiempo para tener datos precisos.
-          </p>
+      <div style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '16px', padding: '16px', margin: '0 16px 12px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+          <Sparkles size={16} color="#111111" />
+          <span style={{ fontWeight: 700, fontSize: '13px', color: '#111111' }}>Mantén tu inventario al día</span>
         </div>
+        <p style={{ fontSize: '11px', color: '#111111', opacity: 0.7, margin: 0, lineHeight: 1.4 }}>
+          Registra tus movimientos a tiempo para tener datos precisos
+        </p>
       </div>
 
       {/* Usuario */}
