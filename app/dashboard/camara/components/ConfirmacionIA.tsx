@@ -12,6 +12,7 @@ type FilaProducto = {
   cantidad: number
   accion: 'ingreso' | 'retiro'
   productoId: string | null
+  categoria_id: string
 }
 
 type ResultadoIA = {
@@ -39,8 +40,10 @@ export default function ConfirmacionIA({ resultado, documentoBase64, documentoMe
       cantidad: Math.max(1, Number(p.cantidad) || 1),
       accion: p.accion === 'retiro' ? 'retiro' : 'ingreso',
       productoId: null,
+      categoria_id: '',
     }))
   )
+  const [categorias, setCategorias] = useState<{ id: string; nombre: string; icono: string | null }[]>([])
   const [moneda, setMoneda] = useState(resultado.moneda || 'USD')
   const [nota, setNota] = useState('')
   const [almacenId, setAlmacenId] = useState(() => {
@@ -78,12 +81,34 @@ export default function ConfirmacionIA({ resultado, documentoBase64, documentoMe
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    const cargarCategorias = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: perfil } = await supabase
+        .from('perfiles')
+        .select('empresa_id')
+        .eq('id', user.id)
+        .single()
+      if (!perfil?.empresa_id) return
+      const { data } = await supabase
+        .from('categorias')
+        .select('id, nombre, icono')
+        .eq('empresa_id', perfil.empresa_id)
+        .eq('activo', true)
+        .order('nombre')
+      setCategorias(data || [])
+    }
+    cargarCategorias()
+  }, [])
+
   function actualizarFila(uid: string, cambios: Partial<FilaProducto>) {
     setFilas(prev => prev.map(f => (f.uid === uid ? { ...f, ...cambios } : f)))
   }
 
   function agregarFila() {
-    setFilas(prev => [...prev, { uid: Date.now().toString(), nombre: '', cantidad: 1, accion: 'ingreso', productoId: null }])
+    setFilas(prev => [...prev, { uid: Date.now().toString(), nombre: '', cantidad: 1, accion: 'ingreso', productoId: null, categoria_id: '' }])
   }
 
   async function handleConfirmar() {
@@ -126,7 +151,23 @@ export default function ConfirmacionIA({ resultado, documentoBase64, documentoMe
     const supabase = createClient()
     const notaFinal = nota.trim() || `Importado vía IA · ${moneda}`
     for (const fila of filasValidas) {
-      if (!fila.productoId) continue
+      if (!fila.productoId) {
+        if (fila.categoria_id) {
+          const { data: prod } = await supabase
+            .from('productos')
+            .select('id')
+            .eq('empresa_id', empresaId)
+            .ilike('nombre', fila.nombre)
+            .single()
+          if (prod?.id) {
+            await supabase
+              .from('productos')
+              .update({ categoria_id: fila.categoria_id })
+              .eq('id', prod.id)
+          }
+        }
+        continue
+      }
       await supabase.rpc('registrar_movimiento', {
         p_producto_id: fila.productoId,
         p_almacen_id: almacenId,
@@ -219,14 +260,14 @@ export default function ConfirmacionIA({ resultado, documentoBase64, documentoMe
 
       {/* Tabla */}
       <div style={{ background: '#FFF', borderRadius: '16px', border: '1px solid #E8E8E8', overflow: 'hidden', marginBottom: '16px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px 104px 36px', gap: '8px', padding: '10px 14px', background: '#F8F6EA', borderBottom: '1px solid #E8E8E8' }}>
-          {['PRODUCTO', 'CANT.', 'ACCIÓN', ''].map((h, i) => (
-            <span key={i} style={{ fontSize: '11px', fontWeight: 600, color: '#6B6B6B', textAlign: i === 1 || i === 2 ? 'center' : 'left' }}>{h}</span>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 148px 72px 104px 36px', gap: '8px', padding: '10px 14px', background: '#F8F6EA', borderBottom: '1px solid #E8E8E8' }}>
+          {['PRODUCTO', 'CATEGORÍA', 'CANT.', 'ACCIÓN', ''].map((h, i) => (
+            <span key={i} style={{ fontSize: '11px', fontWeight: 600, color: '#6B6B6B', textAlign: i === 2 || i === 3 ? 'center' : 'left' }}>{h}</span>
           ))}
         </div>
 
         {filas.map(fila => (
-          <div key={fila.uid} style={{ display: 'grid', gridTemplateColumns: '1fr 72px 104px 36px', gap: '8px', padding: '10px 14px', borderBottom: '1px solid #F0F0F0', alignItems: 'center' }}>
+          <div key={fila.uid} style={{ display: 'grid', gridTemplateColumns: '1fr 148px 72px 104px 36px', gap: '8px', padding: '10px 14px', borderBottom: '1px solid #F0F0F0', alignItems: 'center' }}>
             <div>
               <input
                 value={fila.nombre}
@@ -240,6 +281,18 @@ export default function ConfirmacionIA({ resultado, documentoBase64, documentoMe
                 </span>
               )}
             </div>
+            <select
+              value={fila.categoria_id}
+              onChange={e => actualizarFila(fila.uid, { categoria_id: e.target.value })}
+              style={{ border: '1px solid #E8E8E8', borderRadius: '8px', padding: '6px 10px', fontSize: '13px', background: '#FFFFFF', width: '100%', fontFamily: 'inherit', outline: 'none', color: '#111', boxSizing: 'border-box' as const }}
+            >
+              <option value="">Sin categoría</option>
+              {categorias.map(cat => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.icono} {cat.nombre}
+                </option>
+              ))}
+            </select>
             <input
               type="number"
               min={1}
