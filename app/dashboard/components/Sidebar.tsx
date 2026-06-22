@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Package, ArrowLeftRight, Tag, Warehouse, Users, Settings, ClipboardList } from 'lucide-react'
+import { Home, Package, ArrowLeftRight, Tag, Warehouse, Users, Settings, ClipboardList, Sparkles } from 'lucide-react'
 
 const navItems = [
   { label: 'Inicio', href: '/dashboard', icon: Home },
@@ -35,12 +35,12 @@ export default function Sidebar({ nombreUsuario, rol }: Props) {
       style={{
         position: 'fixed', top: 0, left: 0,
         width: '240px', height: '100vh',
-        background: '#111111', zIndex: 30,
+        background: '#F4C400', zIndex: 30,
       }}
     >
       {/* Logo */}
       <div style={{ padding: '28px 24px 20px' }}>
-        <span style={{ fontSize: '24px', fontWeight: 800, color: '#F4C400', letterSpacing: '-0.5px', fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)' }}>
+        <span style={{ fontSize: '24px', fontWeight: 800, color: '#111111', letterSpacing: '-0.5px', fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)' }}>
           KIPUX
         </span>
       </div>
@@ -59,40 +59,54 @@ export default function Sidebar({ nombreUsuario, rol }: Props) {
                 alignItems: 'center',
                 gap: '12px',
                 padding: '10px 12px',
-                borderRadius: '10px',
+                borderRadius: '12px',
                 marginBottom: '2px',
                 textDecoration: 'none',
-                color: active ? '#F4C400' : '#A0A0A0',
-                background: active ? 'rgba(244,196,0,0.10)' : 'transparent',
-                borderLeft: active ? '3px solid #F4C400' : '3px solid transparent',
+                color: active ? '#FFFFFF' : '#111111',
+                background: active ? '#111111' : 'transparent',
                 fontSize: '14px',
-                fontWeight: active ? 600 : 400,
-                transition: 'color 0.15s',
+                fontWeight: active ? 600 : 500,
+                transition: 'background 0.15s',
               }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(0,0,0,0.08)' }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
             >
-              <Icon size={18} />
+              <Icon size={18} color={active ? '#FFFFFF' : '#111111'} />
               {item.label}
             </Link>
           )
         })}
       </nav>
 
+      {/* Cuadro decorativo */}
+      <div style={{ padding: '0 12px 12px' }}>
+        <div style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '16px', padding: '16px' }}>
+          <Sparkles size={20} color="#111111" style={{ marginBottom: '8px' }} />
+          <p style={{ fontWeight: 700, fontSize: '13px', color: '#111111', margin: '0 0 4px' }}>
+            Mantén tu inventario al día
+          </p>
+          <p style={{ fontSize: '11px', color: '#111111', opacity: 0.7, margin: 0, lineHeight: 1.4 }}>
+            Registra tus movimientos a tiempo para tener datos precisos.
+          </p>
+        </div>
+      </div>
+
       {/* Usuario */}
-      <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      <div style={{ padding: '12px 16px 20px', borderTop: '1px solid rgba(0,0,0,0.12)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{
             width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-            background: '#F4C400', color: '#111111',
+            background: '#FFFFFF', color: '#111111',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontWeight: 700, fontSize: '15px',
           }}>
             {nombreUsuario[0]?.toUpperCase()}
           </div>
           <div style={{ minWidth: 0 }}>
-            <p style={{ color: '#FFFFFF', fontSize: '13px', fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <p style={{ color: '#111111', fontSize: '13px', fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {nombreUsuario}
             </p>
-            <p style={{ color: '#A0A0A0', fontSize: '11px', margin: 0, textTransform: 'capitalize' }}>
+            <p style={{ color: '#111111', fontSize: '11px', margin: 0, textTransform: 'capitalize', opacity: 0.6 }}>
               {rol}
             </p>
           </div>

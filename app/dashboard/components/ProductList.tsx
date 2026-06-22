@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Bell, Search, Plus, Package, Edit2, Warehouse, X,
   Scan, ChevronDown, RotateCcw, Upload, PlusCircle, TrendingUp,
-  DollarSign, AlertTriangle, ShoppingBag,
+  DollarSign, AlertTriangle, ShoppingBag, ArrowUpDown,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import StockModal from './StockModal'
@@ -99,9 +99,12 @@ export default function ProductList({
   const [mostrarPanelAcciones, setMostrarPanelAcciones] = useState(false)
   const [mostrarDropCategoria, setMostrarDropCategoria] = useState(false)
   const [mostrarDropAlmacen, setMostrarDropAlmacen] = useState(false)
+  const [ordenamiento, setOrdenamiento] = useState('nombre-asc')
+  const [mostrarDropOrden, setMostrarDropOrden] = useState(false)
 
   const dropCatRef = useRef<HTMLDivElement>(null)
   const dropAlmRef = useRef<HTMLDivElement>(null)
+  const dropOrdenRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -124,6 +127,7 @@ export default function ProductList({
       const target = e.target as Node
       if (!dropCatRef.current?.contains(target)) setMostrarDropCategoria(false)
       if (!dropAlmRef.current?.contains(target)) setMostrarDropAlmacen(false)
+      if (!dropOrdenRef.current?.contains(target)) setMostrarDropOrden(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -154,6 +158,17 @@ export default function ProductList({
     })
     .filter(p => categoriasSeleccionadas.length === 0 || categoriasSeleccionadas.includes(p.categorias?.nombre ?? ''))
     .filter(() => almacenesSeleccionados.length === 0)
+    .sort((a, b) => {
+      switch (ordenamiento) {
+        case 'nombre-asc': return a.nombre.localeCompare(b.nombre)
+        case 'nombre-desc': return b.nombre.localeCompare(a.nombre)
+        case 'stock-mayor': return b.stock_actual - a.stock_actual
+        case 'stock-menor': return a.stock_actual - b.stock_actual
+        case 'valor-mayor': return (b.costo_usd * b.stock_actual) - (a.costo_usd * a.stock_actual)
+        case 'valor-menor': return (a.costo_usd * a.stock_actual) - (b.costo_usd * b.stock_actual)
+        default: return 0
+      }
+    })
 
   const hayFiltrosActivos =
     filtroEstado !== 'todos' || categoriasSeleccionadas.length > 0 || almacenesSeleccionados.length > 0
@@ -223,7 +238,7 @@ export default function ProductList({
 
   return (
     <div style={{ background: '#F8F6EA', minHeight: '100vh', fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)' }}>
-      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '28px 16px 100px' }}>
+      <div className="px-4 md:px-8" style={{ paddingTop: '28px', paddingBottom: '100px' }}>
 
         {/* Saludo */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
@@ -377,6 +392,37 @@ export default function ProductList({
               Limpiar filtros
             </button>
           )}
+
+          {/* Ordenar */}
+          <div ref={dropOrdenRef} style={{ position: 'relative', flexShrink: 0, marginLeft: 'auto' }}>
+            <button
+              onClick={() => { setMostrarDropOrden(v => !v); setMostrarDropCategoria(false); setMostrarDropAlmacen(false) }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '999px', border: '1px solid #E8E8E8', background: '#FFFFFF', color: '#111111', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+            >
+              <ArrowUpDown size={14} />
+              Ordenar
+            </button>
+            {mostrarDropOrden && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 50, background: '#FFFFFF', borderRadius: '12px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', padding: '8px', minWidth: '180px' }}>
+                {[
+                  { key: 'nombre-asc', label: 'Nombre (A-Z)' },
+                  { key: 'nombre-desc', label: 'Nombre (Z-A)' },
+                  { key: 'stock-mayor', label: 'Stock (mayor)' },
+                  { key: 'stock-menor', label: 'Stock (menor)' },
+                  { key: 'valor-mayor', label: 'Valor (mayor)' },
+                  { key: 'valor-menor', label: 'Valor (menor)' },
+                ].map(op => (
+                  <div
+                    key={op.key}
+                    onClick={() => { setOrdenamiento(op.key); setMostrarDropOrden(false) }}
+                    style={{ padding: '9px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', color: '#111111', background: ordenamiento === op.key ? '#F8F6EA' : 'transparent', fontWeight: ordenamiento === op.key ? 600 : 400 }}
+                  >
+                    {op.label}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Banner almacén filtrado */}
@@ -446,83 +492,51 @@ export default function ProductList({
               })}
             </div>
 
-            {/* ── DESKTOP: tabla ── */}
-            <div className="hidden md:block" style={{ background: '#FFFFFF', borderRadius: '16px', overflow: 'hidden', border: '1px solid #E8E8E8' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: '#F8F6EA' }}>
-                    {['Producto', 'Categoría', 'Stock', 'Estado', 'Valor', 'Acciones'].map(col => (
-                      <th key={col} style={{ padding: '10px 16px', textAlign: col === 'Valor' || col === 'Acciones' ? 'right' : 'left', fontSize: '12px', color: '#6B6B6B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {productosFiltrados.map(producto => {
-                    const badge = getStockBadge(producto)
-                    const valorTotalP = (producto.costo_usd * producto.stock_actual).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                    const precioU = producto.costo_usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                    return (
-                      <tr
-                        key={producto.id}
-                        onClick={() => router.push(`/inventario/${producto.id}`)}
-                        style={{ borderBottom: '1px solid #F0F0F0', cursor: 'pointer' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = '#FAFAFA')}
-                        onMouseLeave={e => (e.currentTarget.style.background = '')}
-                      >
-                        {/* Producto */}
-                        <td style={{ padding: '12px 16px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            {producto.foto_url ? (
-                              <img src={producto.foto_url} alt={producto.nombre} style={{ width: '44px', height: '44px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />
-                            ) : (
-                              <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: '#F0F0F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '18px', color: '#6B6B6B', flexShrink: 0 }}>
-                                {producto.nombre[0].toUpperCase()}
-                              </div>
-                            )}
-                            <div>
-                              <p style={{ fontWeight: 600, fontSize: '14px', color: '#111111', margin: '0 0 2px' }}>{producto.nombre}</p>
-                              {producto.sku && <p style={{ fontSize: '12px', color: '#6B6B6B', margin: 0 }}>{producto.sku}</p>}
-                            </div>
-                          </div>
-                        </td>
-                        {/* Categoría */}
-                        <td style={{ padding: '12px 16px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            {producto.categorias?.icono && <span>{producto.categorias.icono}</span>}
-                            <span style={{ fontSize: '13px', color: '#6B6B6B' }}>{producto.categorias?.nombre ?? '—'}</span>
-                          </div>
-                        </td>
-                        {/* Stock */}
-                        <td style={{ padding: '12px 16px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontSize: '14px', fontWeight: 500, color: '#111111' }}>{producto.stock_actual} {producto.unidad}</span>
-                            <Tendencia mov={producto.ultimoMovimiento} />
-                          </div>
-                        </td>
-                        {/* Estado */}
-                        <td style={{ padding: '12px 16px' }}>
-                          <span style={{ background: badge.bg, color: badge.color, fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '100px' }}>{badge.label}</span>
-                        </td>
-                        {/* Valor */}
-                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                          <p style={{ fontWeight: 700, fontSize: '14px', color: '#111111', margin: '0 0 2px' }}>${valorTotalP}</p>
-                          <p style={{ fontSize: '12px', color: '#6B6B6B', margin: 0 }}>${precioU} c/u</p>
-                        </td>
-                        {/* Acciones */}
-                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
-                            <button onClick={e => { e.stopPropagation(); setModal({ producto, tipo: 'ingreso' }) }} style={{ padding: '6px 14px', borderRadius: '999px', border: 'none', background: '#111111', color: '#FFFFFF', fontWeight: 600, fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>Entrada</button>
-                            <button onClick={e => { e.stopPropagation(); setModal({ producto, tipo: 'retiro' }) }} style={{ padding: '6px 14px', borderRadius: '999px', border: 'none', background: '#FF4D4D', color: '#FFFFFF', fontWeight: 600, fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>Salida</button>
-                            <button onClick={e => { e.stopPropagation(); router.push(`/dashboard/productos/${producto.id}/editar`) }} style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #E8E8E8', background: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6B6B' }}><Edit2 size={14} /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+            {/* ── DESKTOP: filas card ── */}
+            <div className="hidden md:block">
+              {productosFiltrados.map(producto => {
+                const badge = getStockBadge(producto)
+                const valorTotalP = (producto.costo_usd * producto.stock_actual).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                const precioU = producto.costo_usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                return (
+                  <div
+                    key={producto.id}
+                    onClick={() => router.push(`/inventario/${producto.id}`)}
+                    style={{ background: '#FFFFFF', borderRadius: '12px', padding: '16px 20px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#FAFAFA')}
+                    onMouseLeave={e => (e.currentTarget.style.background = '#FFFFFF')}
+                  >
+                    {/* Foto / avatar */}
+                    {producto.foto_url ? (
+                      <img src={producto.foto_url} alt={producto.nombre} style={{ width: '48px', height: '48px', borderRadius: '12px', objectFit: 'cover', flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#F0F0F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '20px', color: '#6B6B6B', flexShrink: 0 }}>
+                        {producto.nombre[0].toUpperCase()}
+                      </div>
+                    )}
+                    {/* Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: '14px', color: '#111111', marginBottom: '2px' }}>{producto.nombre}</div>
+                      <div style={{ fontSize: '12px', color: '#6B6B6B' }}>
+                        {[producto.categorias?.nombre, `${producto.stock_actual} ${producto.unidad}`].filter(Boolean).join(' · ')}
+                      </div>
+                    </div>
+                    {/* Badge */}
+                    <span style={{ background: badge.bg, color: badge.color, fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', flexShrink: 0 }}>{badge.label}</span>
+                    {/* Precios */}
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: '14px', color: '#111111' }}>${valorTotalP}</div>
+                      <div style={{ fontSize: '12px', color: '#6B6B6B' }}>${precioU} c/u</div>
+                    </div>
+                    {/* Botones */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      <button onClick={e => { e.stopPropagation(); setModal({ producto, tipo: 'ingreso' }) }} style={{ padding: '7px 16px', borderRadius: '999px', border: 'none', background: '#111111', color: '#FFFFFF', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>Entrada</button>
+                      <button onClick={e => { e.stopPropagation(); setModal({ producto, tipo: 'retiro' }) }} style={{ padding: '7px 16px', borderRadius: '999px', border: 'none', background: '#FF4D4D', color: '#FFFFFF', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>Salida</button>
+                      <button onClick={e => { e.stopPropagation(); router.push(`/dashboard/productos/${producto.id}/editar`) }} style={{ width: '34px', height: '34px', borderRadius: '10px', border: '1px solid #E8E8E8', background: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B6B6B', flexShrink: 0 }}><Edit2 size={15} /></button>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </>
         )}

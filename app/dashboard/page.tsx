@@ -87,10 +87,10 @@ export default async function DashboardPage() {
 
   return (
     <div
+      className="px-4 md:px-8"
       style={{
-        padding: '24px 20px',
-        maxWidth: '720px',
-        margin: '0 auto',
+        paddingTop: '28px',
+        paddingBottom: '100px',
         fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)',
       }}
     >
