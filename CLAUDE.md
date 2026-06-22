@@ -29,11 +29,11 @@ app/
   login/page.tsx                  # Auth (Client Component)
   dashboard/
     layout.tsx                    # Auth guard + Sidebar + BottomNav (Server Component)
-    page.tsx                      # Product list (Server → ProductList client)
+    page.tsx                      # Resumen: productos críticos + actividad del día
     components/
       Sidebar.tsx                 # Desktop nav, hidden md:flex
       BottomNav.tsx               # Mobile nav, flex md:hidden
-      ProductList.tsx             # Client: search, filters, stock badges
+      ProductList.tsx             # Client: search, filters, KPIs, ordenamiento — shared con /inventario
       StockModal.tsx              # Client: +/- stock via RPC
     productos/
       components/ProductoForm.tsx # Shared create/edit form (Client)
@@ -43,9 +43,21 @@ app/
       page.tsx
       components/MovimientosList.tsx
       components/MovimientoDetalle.tsx
-lib/supabase/
-  server.ts   # createClient() — async, uses cookies(), for Server Components
-  client.ts   # createClient() — sync, createBrowserClient(), for Client Components
+  inventario/
+    layout.tsx                    # Auth guard (comparte estructura con dashboard)
+    page.tsx                      # Lista de productos — importa ProductList de dashboard/components
+    [id]/
+      page.tsx                    # Detalle de producto: stock por almacén + movimientos
+      components/
+        AccionesProducto.tsx      # Botones Entrada / Salida / Transferir
+        TransferirModal.tsx       # Modal de transferencia entre almacenes (RPC transferir_stock)
+lib/
+  utils.ts    # formatFecha, formatFechaCorta, formatHora, getSaludo, getEstadoStock
+  design.ts   # Tokens de colores, badges, radius, shadows
+  supabase/
+    server.ts    # createClient() — async, uses cookies(), for Server Components
+    client.ts    # createClient() — sync, createBrowserClient(), for Client Components
+    session.ts   # getSession() — centralizado: { supabase, user, empresaId, nombre, rol }
 proxy.ts      # Route protection (renamed from middleware.ts in Next.js 16)
 ```
 
@@ -155,3 +167,15 @@ Use `crypto.randomUUID()` to pre-generate the product ID before insert so the st
 - ✅ Configuración con tasa BCV y alertas email
 - ✅ Modo Auditoría completo con Realtime y panel trabajador
 - ✅ Cámara + IA (leer facturas) — HubCaptura, EscanerFactura, ConfirmacionIA, Route Handler Claude API
+- ✅ Dashboard separado de Inventario (/dashboard y /inventario)
+- ✅ Pantalla de detalle de producto (/inventario/[id])
+- ✅ Filtros múltiples en inventario (estado, categoría, almacén, ordenamiento)
+- ✅ Transferencia entre almacenes (RPC transferir_stock + TransferirModal)
+- ✅ Sidebar con degradado amarillo #F4C400 → #D4A800
+- ✅ KPIs en inventario (total productos, valor, bajo stock, agotados)
+- ✅ Botones Entrada/Salida en lista de productos y detalle
+- ✅ Panel de acciones en BottomNav móvil
+- ✅ Carga masiva (botón que navega a /dashboard/camara)
+- ✅ Centralización: getSession() en lib/supabase/session.ts, lib/utils.ts, lib/design.ts
+- ✅ Desplegado en Vercel (kipux-ashen.vercel.app)
+- ✅ RPC transferir_stock con UNIQUE constraint en stock_por_almacen
