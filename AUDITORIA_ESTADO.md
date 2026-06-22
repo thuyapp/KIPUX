@@ -115,7 +115,7 @@ logismart-app/
 
 | Issue | Estado | Detalle |
 |-------|--------|---------|
-| `/api/ia/procesar-documento` sin auth | 🔴 PENDIENTE | Cualquier usuario puede hacer POST y consumir créditos de Anthropic. Solución mínima: verificar sesión con `createServerClient().auth.getUser()` antes de llamar a Claude. |
+| `/api/ia/procesar-documento` sin auth | ✅ Resuelto | Verifica sesión con `createClient().auth.getUser()` y valida que el usuario tenga perfil de empresa antes de llamar a Claude. |
 | `console.log` de SUPABASE_SECRET_KEY | ✅ Resuelto (Sprint 1) | Eliminado de `api/empleados/route.ts` |
 | ANTHROPIC_API_KEY en producción | ⚠ Sin fondos activos | La key no está configurada; la UI cae en modo `sin_api_key` y permite entrada manual |
 
