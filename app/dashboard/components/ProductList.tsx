@@ -108,7 +108,7 @@ export default function ProductList({
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.from('almacenes').select('id, nombre').eq('activo', true).then(({ data }) => {
+    supabase.from('almacenes').select('id, nombre').eq('activo', true).then(({ data }: { data: { id: string; nombre: string }[] | null }) => {
       if (data) setAlmacenesDB(data)
     })
   }, [])

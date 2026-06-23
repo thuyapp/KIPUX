@@ -33,9 +33,9 @@ export default function StockModal({ producto, almacenId, almacenNombre, tipo, o
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user } }: { data: { user: { id: string } | null } }) => {
       if (!user) return
-      supabase.from('perfiles').select('empresa_id').eq('id', user.id).single().then(({ data }) => {
+      supabase.from('perfiles').select('empresa_id').eq('id', user.id).single().then(({ data }: { data: { empresa_id: string } | null }) => {
         if (data?.empresa_id) setEmpresaId(data.empresa_id)
       })
     })

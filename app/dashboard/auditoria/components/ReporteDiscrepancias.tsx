@@ -61,7 +61,7 @@ export default function ReporteDiscrepancias({ empresaId, initialAuditoriaId }: 
       .eq('empresa_id', empresaId)
       .in('estado', ['finalizada', 'cancelada'])
       .order('fecha_inicio', { ascending: false })
-      .then(({ data }) => {
+      .then(({ data }: { data: unknown }) => {
         const opts = (data ?? []) as AuditoriaOption[]
         setAuditorias(opts)
         if (initialAuditoriaId && opts.find(o => o.id === initialAuditoriaId)) {

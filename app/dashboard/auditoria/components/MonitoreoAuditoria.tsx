@@ -37,7 +37,7 @@ export default function MonitoreoAuditoria({ auditoriaActiva, empleados, onFinal
       .from('auditoria_items')
       .select('id, usuario_asignado, estado')
       .eq('auditoria_id', auditoriaActiva.id)
-      .then(({ data }) => {
+      .then(({ data }: { data: unknown }) => {
         setItems((data ?? []) as AuditoriaItem[])
         setLoading(false)
       })
@@ -49,7 +49,7 @@ export default function MonitoreoAuditoria({ auditoriaActiva, empleados, onFinal
         schema: 'public',
         table: 'auditoria_items',
         filter: `auditoria_id=eq.${auditoriaActiva.id}`,
-      }, (payload) => {
+      }, (payload: { new: unknown }) => {
         const updated = payload.new as AuditoriaItem
         setItems(prev => prev.map(item => item.id === updated.id ? { ...item, estado: updated.estado } : item))
       })

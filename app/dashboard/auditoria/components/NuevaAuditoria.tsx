@@ -80,7 +80,7 @@ export default function NuevaAuditoria({ empresaId, userId, empleados, categoria
         .from('stock_por_almacen')
         .select('producto_id, stock_actual')
         .eq('almacen_id', almacenId)
-      productos = (spRaw ?? []).map(r => ({ id: r.producto_id, stock_actual: r.stock_actual }))
+      productos = (spRaw ?? []).map((r: { producto_id: string; stock_actual: number }) => ({ id: r.producto_id, stock_actual: r.stock_actual }))
     } else {
       let q = supabase.from('productos').select('id, stock_actual').eq('activo', true)
       if (alcance === 'categoria') q = q.eq('categoria_id', categoriaId)

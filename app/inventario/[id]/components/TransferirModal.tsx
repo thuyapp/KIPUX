@@ -52,7 +52,7 @@ export default function TransferirModal({
       .select('id, nombre')
       .eq('activo', true)
       .neq('id', almacenOrigenId)
-      .then(({ data }) => setAlmacenes((data ?? []) as Almacen[]))
+      .then(({ data }: { data: unknown }) => setAlmacenes((data ?? []) as Almacen[]))
   }, [almacenOrigenId])
 
   async function handleTransferir() {

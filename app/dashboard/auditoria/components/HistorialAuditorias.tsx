@@ -69,7 +69,7 @@ export default function HistorialAuditorias({ empresaId, empleados, onNuevaAudit
       `)
       .eq('empresa_id', empresaId)
       .order('fecha_inicio', { ascending: false })
-      .then(({ data }) => {
+      .then(({ data }: { data: unknown }) => {
         setAuditorias((data ?? []) as unknown as AuditoriaHistorial[])
         setLoading(false)
       })
