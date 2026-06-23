@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { X, Minus, Plus, Camera, Trash2 } from 'lucide-react'
 
@@ -28,7 +28,18 @@ export default function StockModal({ producto, almacenId, almacenNombre, tipo, o
   const [error, setError] = useState('')
   const [fotoFile, setFotoFile] = useState<File | null>(null)
   const [fotoPreview, setFotoPreview] = useState<string | null>(null)
+  const [empresaId, setEmpresaId] = useState('')
   const fotoInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase.from('perfiles').select('empresa_id').eq('id', user.id).single().then(({ data }) => {
+        if (data?.empresa_id) setEmpresaId(data.empresa_id)
+      })
+    })
+  }, [])
 
   const nuevaCantidad = tipo === 'ingreso'
     ? producto.stock_actual + cantidad
@@ -50,7 +61,7 @@ export default function StockModal({ producto, almacenId, almacenNombre, tipo, o
     let fotoUrl: string | undefined
     if (fotoFile) {
       const ext = fotoFile.name.split('.').pop() ?? 'jpg'
-      const path = `${producto.id}/evidencias/${Date.now()}.${ext}`
+      const path = `${empresaId || producto.id}/evidencias/${producto.id}/${Date.now()}.${ext}`
       const { error: uploadErr } = await supabase.storage
         .from('productos')
         .upload(path, fotoFile, { upsert: true })

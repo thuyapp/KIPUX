@@ -19,6 +19,8 @@ export default async function DashboardLayout({
     .eq('id', user.id)
     .single()
 
+  if (perfil?.rol === 'trabajador') redirect('/auditoria')
+
   const nombreUsuario = perfil?.nombre ?? 'Admin'
   const rol = perfil?.rol ?? 'admin'
 
