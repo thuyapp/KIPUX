@@ -16,6 +16,8 @@ export default function LoginPage() {
   const [mensaje, setMensaje] = useState('')
   const [loading, setLoading] = useState(false)
   const [focusedField, setFocusedField] = useState<string | null>(null)
+  const [modoRecuperar, setModoRecuperar] = useState(false)
+  const [emailEnviado, setEmailEnviado] = useState(false)
   const router = useRouter()
 
   function resetForm() {
@@ -168,6 +170,68 @@ export default function LoginPage() {
             <span style={{ fontSize: '28px', fontWeight: 800, color: '#F4C400' }}>KIPUX</span>
           </div>
 
+          {modoRecuperar ? (
+            <div>
+              <h2 style={{ fontSize: '26px', fontWeight: 700, color: '#111111', margin: '0 0 8px' }}>
+                Recuperar contraseña
+              </h2>
+              <p style={{ fontSize: '14px', color: '#6B6B6B', margin: '0 0 24px' }}>
+                Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.
+              </p>
+              {emailEnviado ? (
+                <div style={{ background: '#E8FFF6', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
+                  <p style={{ color: '#00A67E', fontWeight: 600, margin: 0 }}>
+                    ✓ Correo enviado. Revisa tu bandeja de entrada.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: '#111111', display: 'block', marginBottom: '6px' }}>
+                    Correo electrónico
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="tu@correo.com"
+                    style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E8E8E8', fontSize: '14px', marginBottom: '16px', boxSizing: 'border-box' }}
+                  />
+                  <button
+                    onClick={async () => {
+                      setLoading(true)
+                      const supabase = createClient()
+                      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                        redirectTo: `${window.location.origin}/reset-password`,
+                      })
+                      if (error) setError(error.message)
+                      else setEmailEnviado(true)
+                      setLoading(false)
+                    }}
+                    style={{ width: '100%', padding: '14px', borderRadius: '999px', background: '#F4C400', border: 'none', fontWeight: 700, fontSize: '15px', cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    {loading ? 'Enviando...' : 'Enviar enlace'}
+                  </button>
+                </>
+              )}
+              {error && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  background: '#FFE8E8', borderRadius: '10px', padding: '12px',
+                  marginTop: '12px',
+                }}>
+                  <AlertCircle size={16} color="#FF4D4D" style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: '13px', color: '#FF4D4D' }}>{error}</span>
+                </div>
+              )}
+              <button
+                onClick={() => { setModoRecuperar(false); setEmailEnviado(false); setError('') }}
+                style={{ width: '100%', marginTop: '12px', background: 'transparent', border: 'none', color: '#F4C400', fontWeight: 600, fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                ← Volver al login
+              </button>
+            </div>
+          ) : (
+            <>
           {/* Título */}
           <h2 style={{ fontSize: '26px', fontWeight: 700, color: '#111111', margin: '0 0 6px' }}>
             {modo === 'login' ? 'Bienvenido de vuelta' : 'Crear cuenta'}
@@ -241,7 +305,7 @@ export default function LoginPage() {
               <div style={{ textAlign: 'right', marginBottom: '20px' }}>
                 <button
                   type="button"
-                  onClick={() => alert('Contacta a tu administrador o escribe a wjmosqueda@gmail.com')}
+                  onClick={() => setModoRecuperar(true)}
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
                     color: '#F4C400', fontSize: '13px', fontWeight: 500,
@@ -358,6 +422,8 @@ export default function LoginPage() {
               Política de Privacidad
             </a>
           </p>
+            </>
+          )}
 
         </div>
       </div>

@@ -78,12 +78,12 @@ function SaveButton({ onClick, loading, label }: { onClick: () => void; loading:
 
 export default function ConfiguracionForm({ empresa, tasaActual, configAlertas, empresaId, userEmail }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('negocio')
-  const [toast, setToast] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'error' } | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  function showToast(msg: string) {
+  function showToast(msg: string, type: 'ok' | 'error' = 'ok') {
     if (toastTimer.current) clearTimeout(toastTimer.current)
-    setToast(msg)
+    setToast({ msg, type })
     toastTimer.current = setTimeout(() => setToast(null), 3000)
   }
 
@@ -206,6 +206,29 @@ export default function ConfiguracionForm({ empresa, tasaActual, configAlertas, 
     showToast('Tasa manual guardada ✓')
   }
 
+  // ── Sección 4: Seguridad ────────────────────────────────────
+  const [nuevaPassword, setNuevaPassword] = useState('')
+  const [confirmarPassword, setConfirmarPassword] = useState('')
+
+  const handleCambiarPassword = async () => {
+    if (nuevaPassword !== confirmarPassword) {
+      showToast('Las contraseñas no coinciden', 'error')
+      return
+    }
+    if (nuevaPassword.length < 6) {
+      showToast('La contraseña debe tener al menos 6 caracteres', 'error')
+      return
+    }
+    const supabase = createClient()
+    const { error } = await supabase.auth.updateUser({ password: nuevaPassword })
+    if (error) showToast(error.message, 'error')
+    else {
+      showToast('Contraseña actualizada correctamente', 'ok')
+      setNuevaPassword('')
+      setConfirmarPassword('')
+    }
+  }
+
   // ── Sección 3: Alertas ──────────────────────────────────────
   const [correoAlertas, setCorreoAlertas] = useState(configAlertas?.correo_alertas ?? userEmail)
   const [alertasActivas, setAlertasActivas] = useState(configAlertas?.alertas_activas ?? true)
@@ -246,13 +269,14 @@ export default function ConfiguracionForm({ empresa, tasaActual, configAlertas, 
       {toast && (
         <div style={{
           position: 'fixed', top: '24px', left: '50%', transform: 'translateX(-50%)',
-          background: '#00D7A7', color: '#111111',
+          background: toast.type === 'error' ? '#FF4D4D' : '#00D7A7',
+          color: toast.type === 'error' ? '#FFFFFF' : '#111111',
           padding: '11px 20px', borderRadius: '12px',
           fontSize: '14px', fontWeight: 600,
           boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
           zIndex: 100, whiteSpace: 'nowrap',
         }}>
-          {toast}
+          {toast.msg}
         </div>
       )}
 
@@ -497,6 +521,45 @@ export default function ConfiguracionForm({ empresa, tasaActual, configAlertas, 
           <SaveButton onClick={handleSaveAlertas} loading={savingAlertas} label="Guardar configuración de alertas" />
         </div>
       )}
+
+      {/* ── SEGURIDAD DE CUENTA ───────────────────────────────── */}
+      <div style={{ marginTop: '32px', paddingTop: '32px', borderTop: '1px solid #E8E8E8' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#111111', margin: '0 0 16px' }}>
+          Seguridad de cuenta
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div>
+            <label style={{ fontSize: '13px', fontWeight: 600, color: '#111111', display: 'block', marginBottom: '6px' }}>
+              Nueva contraseña
+            </label>
+            <input
+              type="password"
+              value={nuevaPassword}
+              onChange={e => setNuevaPassword(e.target.value)}
+              placeholder="Mínimo 6 caracteres"
+              style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E8E8E8', fontSize: '14px', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: '13px', fontWeight: 600, color: '#111111', display: 'block', marginBottom: '6px' }}>
+              Confirmar contraseña
+            </label>
+            <input
+              type="password"
+              value={confirmarPassword}
+              onChange={e => setConfirmarPassword(e.target.value)}
+              placeholder="Repite tu contraseña"
+              style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E8E8E8', fontSize: '14px', boxSizing: 'border-box' }}
+            />
+          </div>
+        </div>
+        <button
+          onClick={handleCambiarPassword}
+          style={{ marginTop: '16px', background: '#111111', color: '#FFFFFF', borderRadius: '999px', padding: '12px 24px', border: 'none', fontWeight: 600, fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit' }}
+        >
+          Cambiar contraseña
+        </button>
+      </div>
     </div>
   )
 }
