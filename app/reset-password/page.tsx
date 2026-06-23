@@ -10,19 +10,26 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('')
   const [exito, setExito] = useState(false)
   const [mostrar, setMostrar] = useState(false)
+  const [sessionLista, setSessionLista] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
-    const hashParams = new URLSearchParams(window.location.hash.substring(1))
-    const accessToken = hashParams.get('access_token')
-    const refreshToken = hashParams.get('refresh_token')
+    // Supabase con PKCE maneja el token automáticamente via onAuthStateChange
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setSessionLista(true)
+      }
+      if (event === 'SIGNED_IN' && session) {
+        setSessionLista(true)
+      }
+    })
 
-    if (accessToken && refreshToken) {
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      })
-    }
+    // También verificar si ya hay sesión activa
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setSessionLista(true)
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const handleReset = async () => {
@@ -35,6 +42,7 @@ export default function ResetPasswordPage() {
       return
     }
     setLoading(true)
+    setError('')
     const { error } = await supabase.auth.updateUser({ password })
     if (error) setError(error.message)
     else setExito(true)
@@ -53,6 +61,12 @@ export default function ResetPasswordPage() {
             <a href="/login" style={{ background: '#F4C400', color: '#111111', borderRadius: '999px', padding: '12px 24px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>
               Ir al login
             </a>
+          </div>
+        ) : !sessionLista ? (
+          <div style={{ textAlign: 'center', padding: '24px 0' }}>
+            <div style={{ width: '40px', height: '40px', border: '3px solid #F4C400', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
+            <p style={{ color: '#6B6B6B', fontSize: '14px' }}>Verificando enlace...</p>
+            <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
           </div>
         ) : (
           <>
@@ -83,7 +97,7 @@ export default function ResetPasswordPage() {
             <button
               onClick={handleReset}
               disabled={loading}
-              style={{ width: '100%', padding: '14px', borderRadius: '999px', background: '#F4C400', border: 'none', fontWeight: 700, fontSize: '15px', cursor: 'pointer' }}
+              style={{ width: '100%', padding: '14px', borderRadius: '999px', background: '#F4C400', border: 'none', fontWeight: 700, fontSize: '15px', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
             >
               {loading ? 'Actualizando...' : 'Actualizar contraseña'}
             </button>
