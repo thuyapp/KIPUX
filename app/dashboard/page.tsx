@@ -49,6 +49,7 @@ export default async function DashboardPage() {
     { data: productosCriticosRaw },
     { data: movimientosRaw },
     { data: auditoriaRaw },
+    { count: totalProductos },
   ] = await Promise.all([
     supabase
       .from('productos')
@@ -72,11 +73,17 @@ export default async function DashboardPage() {
       .eq('estado', 'activa')
       .limit(1)
       .single(),
+    supabase
+      .from('productos')
+      .select('id', { count: 'exact', head: true })
+      .eq('empresa_id', empresaId)
+      .eq('activo', true),
   ])
 
   const productosCriticos = (productosCriticosRaw ?? []) as ProductoCritico[]
   const movimientos = (movimientosRaw ?? []) as unknown as MovimientoHoy[]
   const auditoria = auditoriaRaw as unknown as AuditoriaActiva | null
+  const esEmpresaNueva = !totalProductos || totalProductos === 0
 
   const hora = new Date().getHours()
   const saludo = hora < 12 ? 'Buenos días,' : 'Buenas tardes,'
@@ -94,6 +101,67 @@ export default async function DashboardPage() {
         fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)',
       }}
     >
+      {esEmpresaNueva ? (
+        <div style={{
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          minHeight: '60vh', textAlign: 'center', padding: '48px 24px',
+        }}>
+          <div style={{
+            width: '80px', height: '80px', borderRadius: '20px',
+            background: '#F4C400', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            marginBottom: '24px',
+          }}>
+            <Package size={40} color="#111111" />
+          </div>
+          <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#111111', margin: '0 0 8px' }}>
+            ¡Bienvenido a KIPUX!
+          </h2>
+          <p style={{ fontSize: '15px', color: '#6B6B6B', margin: '0 0 32px', maxWidth: '400px', lineHeight: 1.6 }}>
+            Tu cuenta está lista. Empieza agregando tus primeros productos para controlar tu inventario.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <a href="/dashboard/productos/nuevo" style={{
+              background: '#F4C400', color: '#111111',
+              borderRadius: '999px', padding: '14px 28px',
+              fontSize: '15px', fontWeight: 700,
+              textDecoration: 'none', display: 'inline-block',
+            }}>
+              + Agregar primer producto
+            </a>
+            <a href="/dashboard/categorias" style={{
+              background: '#111111', color: '#FFFFFF',
+              borderRadius: '999px', padding: '14px 28px',
+              fontSize: '15px', fontWeight: 700,
+              textDecoration: 'none', display: 'inline-block',
+            }}>
+              Crear categorías
+            </a>
+          </div>
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '16px', marginTop: '48px', maxWidth: '600px', width: '100%',
+          }}>
+            {[
+              { icon: '📦', titulo: 'Agrega productos', desc: 'Crea tu catálogo con fotos, precios y stock mínimo' },
+              { icon: '🏪', titulo: 'Configura almacenes', desc: 'Organiza tu inventario por ubicación o sucursal' },
+              { icon: '📊', titulo: 'Registra movimientos', desc: 'Controla entradas y salidas con historial completo' },
+            ].map((paso, i) => (
+              <div key={i} style={{
+                background: '#FFFFFF', borderRadius: '16px',
+                padding: '20px', textAlign: 'center',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+              }}>
+                <div style={{ fontSize: '28px', marginBottom: '8px' }}>{paso.icon}</div>
+                <div style={{ fontWeight: 700, fontSize: '14px', color: '#111111', marginBottom: '4px' }}>{paso.titulo}</div>
+                <div style={{ fontSize: '12px', color: '#6B6B6B', lineHeight: 1.5 }}>{paso.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <>
       {/* Header */}
       <div style={{ marginBottom: '32px' }}>
         <p style={{ fontSize: '14px', color: '#6B6B6B', margin: '0 0 4px' }}>{saludo}</p>
@@ -310,6 +378,8 @@ export default async function DashboardPage() {
             </Link>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   )

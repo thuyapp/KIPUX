@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Bell, Search, Plus, Package, Edit2, Warehouse, X,
   Scan, ChevronDown, RotateCcw, Upload, PlusCircle, TrendingUp,
-  DollarSign, AlertTriangle, ShoppingBag, ArrowUpDown,
+  DollarSign, AlertTriangle, ShoppingBag, ArrowUpDown, PackageSearch,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import StockModal from './StockModal'
@@ -442,11 +442,38 @@ export default function ProductList({
 
         {/* Lista de productos */}
         {productosFiltrados.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0', gap: '12px' }}>
-            <Package size={48} style={{ color: '#E8E8E8' }} />
-            <p style={{ color: '#6B6B6B', fontSize: '15px', textAlign: 'center', margin: 0 }}>
-              {busqueda ? 'No hay productos que coincidan con la búsqueda.' : almacenFiltro ? 'Este almacén no tiene productos en stock.' : 'No hay productos en esta categoría.'}
+          <div style={{
+            textAlign: 'center', padding: '64px 24px',
+            background: '#FFFFFF', borderRadius: '16px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          }}>
+            <div style={{
+              width: '64px', height: '64px', borderRadius: '16px',
+              background: '#F8F6EA', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 16px',
+            }}>
+              <PackageSearch size={32} color="#6B6B6B" />
+            </div>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111111', margin: '0 0 8px' }}>
+              {busqueda || filtroEstado !== 'todos' ? 'Sin resultados' : 'No hay productos aún'}
+            </h3>
+            <p style={{ fontSize: '14px', color: '#6B6B6B', margin: '0 0 24px' }}>
+              {busqueda || filtroEstado !== 'todos'
+                ? 'Intenta con otros filtros o términos de búsqueda'
+                : 'Agrega tu primer producto para empezar a controlar tu inventario'
+              }
             </p>
+            {!busqueda && filtroEstado === 'todos' && (
+              <a href="/dashboard/productos/nuevo" style={{
+                background: '#F4C400', color: '#111111',
+                borderRadius: '999px', padding: '12px 24px',
+                fontSize: '14px', fontWeight: 700,
+                textDecoration: 'none', display: 'inline-block',
+              }}>
+                + Agregar primer producto
+              </a>
+            )}
           </div>
         ) : (
           <>

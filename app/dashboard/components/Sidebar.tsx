@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Package, ArrowLeftRight, Tag, Warehouse, Users, Settings, ClipboardList, Sparkles } from 'lucide-react'
+import { Home, Package, ArrowLeftRight, Tag, Warehouse, Users, Settings, ClipboardList, Sparkles, LogOut } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 const navItems = [
   { label: 'Inicio', href: '/dashboard', icon: Home },
@@ -22,6 +23,12 @@ type Props = {
 
 export default function Sidebar({ nombreUsuario, rol }: Props) {
   const pathname = usePathname()
+
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    window.location.href = '/login'
+  }
 
   function isActive(href: string): boolean {
     if (href === '/dashboard') return pathname === '/dashboard'
@@ -109,6 +116,16 @@ export default function Sidebar({ nombreUsuario, rol }: Props) {
             </p>
           </div>
         </div>
+        <button onClick={handleLogout} style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          width: '100%', padding: '8px 12px', marginTop: '8px',
+          background: 'rgba(0,0,0,0.15)', border: 'none',
+          borderRadius: '10px', cursor: 'pointer',
+          color: '#111111', fontSize: '13px', fontWeight: 600,
+        }}>
+          <LogOut size={15} color="#111111" />
+          Cerrar sesión
+        </button>
       </div>
     </aside>
   )
