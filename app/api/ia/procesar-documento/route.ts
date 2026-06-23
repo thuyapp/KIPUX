@@ -4,6 +4,10 @@ import { createClient } from '@/lib/supabase/server'
 
 const MAX_BASE64_BYTES = 10 * 1024 * 1024 // 10 MB encoded limit
 
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const RATE_LIMIT = 20 // requests por hora por usuario
+const WINDOW_MS = 60 * 60 * 1000 // 1 hora
+
 const PROMPT = `Analiza esta imagen de factura o lista de inventario. Extrae TODOS los productos y sus cantidades.
 Responde ÚNICAMENTE con JSON válido, sin texto adicional, sin bloques de código:
 {
@@ -29,6 +33,20 @@ export async function POST(req: NextRequest) {
     .single()
   if (!perfil) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  }
+
+  const now = Date.now()
+  const userLimit = rateLimitMap.get(user.id)
+  if (userLimit && now < userLimit.resetAt) {
+    if (userLimit.count >= RATE_LIMIT) {
+      return NextResponse.json(
+        { error: 'Límite de requests alcanzado. Intenta en 1 hora.' },
+        { status: 429 }
+      )
+    }
+    rateLimitMap.set(user.id, { count: userLimit.count + 1, resetAt: userLimit.resetAt })
+  } else {
+    rateLimitMap.set(user.id, { count: 1, resetAt: now + WINDOW_MS })
   }
 
   const body = await req.json()

@@ -71,6 +71,10 @@ export async function PATCH(req: NextRequest) {
 
   if (!userId) return NextResponse.json({ error: 'userId requerido' }, { status: 400 })
 
+  if (rol && !['admin', 'trabajador'].includes(rol)) {
+    return NextResponse.json({ error: 'Rol inválido' }, { status: 400 })
+  }
+
   const { data: targetPerfil } = await supabaseAdmin
     .from('perfiles')
     .select('empresa_id')
