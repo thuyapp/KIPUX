@@ -135,7 +135,11 @@ export default function ProductoForm({ modo, empresaId, categorias, almacenes, p
     const path = `${empresaId}/${productoId}/foto.${ext}`
     const supabase = createClient()
     const { error } = await supabase.storage.from('productos').upload(path, fotoFile, { upsert: true })
-    if (error) return null
+    if (error) {
+      console.error('Error subiendo foto:', error)
+      setErrors(prev => ({ ...prev, foto: `Error al subir foto: ${error.message}` }))
+      return null
+    }
     const { data } = supabase.storage.from('productos').getPublicUrl(path)
     return data.publicUrl
   }
