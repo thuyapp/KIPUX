@@ -179,3 +179,21 @@ Use `crypto.randomUUID()` to pre-generate the product ID before insert so the st
 - ✅ Centralización: getSession() en lib/supabase/session.ts, lib/utils.ts, lib/design.ts
 - ✅ Desplegado en Vercel (kipux-ashen.vercel.app)
 - ✅ RPC transferir_stock con UNIQUE constraint en stock_por_almacen
+- ✅ Registro de nuevo negocio via /api/registro (crea empresa, perfil admin, almacén automáticamente)
+- ✅ Login rediseñado con dos columnas (amarillo + formulario)
+- ✅ Recuperación de contraseña real con PKCE (/reset-password)
+- ✅ Cambio de contraseña desde Configuración
+- ✅ Cerrar sesión en Sidebar
+- ✅ Pantalla de bienvenida para empresas nuevas
+- ✅ Páginas legales públicas (/terminos y /privacidad)
+- ✅ Checkbox de aceptación de términos en registro
+- ✅ Políticas RLS en tabla empresas
+- ✅ Políticas de Storage para subir fotos de productos
+- ✅ Pantalla vacía de inventario con empty state
+- ✅ Pantalla trabajador sin auditoría rediseñada
+- ✅ Fix duplicación de productos en desktop (inline style vs Tailwind)
+- ✅ Bloqueo de trabajadores en rutas /dashboard/*
+- ✅ Validación de rol en PATCH /api/empleados
+- ✅ Rate limiting en /api/ia/procesar-documento
+- ✅ Path de evidencias con empresa_id en StockModal
+- ✅ Proxy permite rutas /api/* sin redirect

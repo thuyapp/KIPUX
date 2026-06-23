@@ -115,9 +115,16 @@ logismart-app/
 
 | Issue | Estado | Detalle |
 |-------|--------|---------|
-| `/api/ia/procesar-documento` sin auth | ✅ Resuelto | Verifica sesión con `createClient().auth.getUser()` y valida que el usuario tenga perfil de empresa antes de llamar a Claude. |
+| `/api/ia/procesar-documento` sin auth | ✅ Resuelto | Verifica sesión con `createClient().auth.getUser()` y valida perfil de empresa antes de llamar a Claude. |
 | `console.log` de SUPABASE_SECRET_KEY | ✅ Resuelto (Sprint 1) | Eliminado de `api/empleados/route.ts` |
 | ANTHROPIC_API_KEY en producción | ⚠ Sin fondos activos | La key no está configurada; la UI cae en modo `sin_api_key` y permite entrada manual |
+| Trabajadores accediendo a rutas `/dashboard/*` | ✅ Resuelto | `dashboard/layout.tsx` redirige a `/auditoria` si `perfil.rol === 'trabajador'` |
+| Validación de rol en PATCH `/api/empleados` | ✅ Resuelto | Whitelist `['admin', 'trabajador']` — retorna 400 si el rol no es válido |
+| Sin rate limiting en endpoint de IA | ✅ Resuelto | In-memory rate limit: 20 req/hora por usuario via `Map<userId, {count, resetAt}>` en `/api/ia/procesar-documento` |
+| Path de evidencias sin `empresa_id` en StockModal | ✅ Resuelto | Path corregido a `${empresaId}/evidencias/${producto.id}/...` — cargado desde `perfiles` en `useEffect` |
+| Proxy redirigía rutas `/api/*` a `/login` | ✅ Resuelto | Early return `NextResponse.next()` para rutas `/api/` antes de verificar sesión |
+| RLS ausente en tabla `empresas` | ✅ Resuelto | Políticas aplicadas en Supabase para aislar datos por empresa |
+| Bucket `productos` sin políticas de Storage | ✅ Resuelto | Políticas aplicadas para que cada empresa solo acceda a su carpeta |
 
 ---
 

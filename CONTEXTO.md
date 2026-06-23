@@ -92,11 +92,13 @@ Datos de prueba existentes:
 
 - ✅ Proyecto Next.js creado (TypeScript, Tailwind, App Router, Geist)
 - ✅ Supabase conectado (lib/supabase/client.ts y lib/supabase/server.ts)
-- ✅ Login funcional (app/login/page.tsx)
-- ✅ Middleware de protección de rutas (middleware.ts)
+- ✅ Login rediseñado con diseño KIPUX completo: dos columnas (gradiente amarillo + formulario), toggle login/registro, recuperación de contraseña real con PKCE (/reset-password)
+- ✅ Registro público de negocios: /api/registro crea empresa, perfil admin y almacén "Principal" en un solo request usando supabaseAdmin
+- ✅ Páginas legales públicas: /terminos y /privacidad (excluidas del proxy de auth)
+- ✅ Middleware de protección de rutas (proxy.ts — Next.js 16)
 - ✅ Dashboard con routing por rol (app/dashboard/page.tsx)
 - ✅ Migración v2: almacenes, stock_por_almacen, campo activo, función actualizada
-- ⚠️ Código actual usa estilos inline básicos — diseño KIPUX se aplica en Fase 2
+- ✅ Diseño KIPUX aplicado en todas las pantallas — Fase 2 completada
 
 ---
 
