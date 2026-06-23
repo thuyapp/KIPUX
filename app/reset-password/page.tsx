@@ -14,22 +14,32 @@ export default function ResetPasswordPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    // Supabase con PKCE maneja el token automáticamente via onAuthStateChange
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setSessionLista(true)
-      }
-      if (event === 'SIGNED_IN' && session) {
-        setSessionLista(true)
-      }
-    })
+    const procesarToken = async () => {
+      // Intentar intercambiar el código PKCE del query string
+      const params = new URLSearchParams(window.location.search)
+      const code = params.get('code')
 
-    // También verificar si ya hay sesión activa
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setSessionLista(true)
-    })
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (!error) {
+          setSessionLista(true)
+          return
+        }
+      }
 
-    return () => subscription.unsubscribe()
+      // Fallback: verificar si ya hay sesión activa
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        setSessionLista(true)
+        return
+      }
+
+      // Si no hay código ni sesión, mostrar error
+      setError('El enlace de recuperación es inválido o ha expirado. Solicita uno nuevo.')
+      setSessionLista(true)
+    }
+
+    procesarToken()
   }, [])
 
   const handleReset = async () => {
@@ -72,35 +82,48 @@ export default function ResetPasswordPage() {
           <>
             <h2 style={{ fontSize: '24px', fontWeight: 700, margin: '0 0 8px' }}>Nueva contraseña</h2>
             <p style={{ color: '#6B6B6B', fontSize: '14px', margin: '0 0 24px' }}>Elige una contraseña segura para tu cuenta.</p>
-            {error && <div style={{ background: '#FFE8E8', borderRadius: '10px', padding: '12px', color: '#FF4D4D', fontSize: '13px', marginBottom: '16px' }}>{error}</div>}
-            <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Nueva contraseña</label>
-            <div style={{ position: 'relative', marginBottom: '16px' }}>
-              <input
-                type={mostrar ? 'text' : 'password'}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-                style={{ width: '100%', padding: '12px 40px 12px 16px', borderRadius: '10px', border: '1px solid #E8E8E8', fontSize: '14px', boxSizing: 'border-box' }}
-              />
-              <button onClick={() => setMostrar(!mostrar)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer' }}>
-                {mostrar ? <EyeOff size={16} color="#6B6B6B" /> : <Eye size={16} color="#6B6B6B" />}
-              </button>
-            </div>
-            <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Confirmar contraseña</label>
-            <input
-              type="password"
-              value={confirmar}
-              onChange={e => setConfirmar(e.target.value)}
-              placeholder="Repite tu contraseña"
-              style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E8E8E8', fontSize: '14px', marginBottom: '24px', boxSizing: 'border-box' }}
-            />
-            <button
-              onClick={handleReset}
-              disabled={loading}
-              style={{ width: '100%', padding: '14px', borderRadius: '999px', background: '#F4C400', border: 'none', fontWeight: 700, fontSize: '15px', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
-            >
-              {loading ? 'Actualizando...' : 'Actualizar contraseña'}
-            </button>
+            {error && (
+              <div style={{ background: '#FFE8E8', borderRadius: '10px', padding: '12px', color: '#FF4D4D', fontSize: '13px', marginBottom: '16px' }}>
+                {error}
+                {error.includes('inválido') && (
+                  <div style={{ marginTop: '8px' }}>
+                    <a href="/login" style={{ color: '#FF4D4D', fontWeight: 600 }}>← Solicitar nuevo enlace</a>
+                  </div>
+                )}
+              </div>
+            )}
+            {!error && (
+              <>
+                <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Nueva contraseña</label>
+                <div style={{ position: 'relative', marginBottom: '16px' }}>
+                  <input
+                    type={mostrar ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                    style={{ width: '100%', padding: '12px 40px 12px 16px', borderRadius: '10px', border: '1px solid #E8E8E8', fontSize: '14px', boxSizing: 'border-box' }}
+                  />
+                  <button onClick={() => setMostrar(!mostrar)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                    {mostrar ? <EyeOff size={16} color="#6B6B6B" /> : <Eye size={16} color="#6B6B6B" />}
+                  </button>
+                </div>
+                <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Confirmar contraseña</label>
+                <input
+                  type="password"
+                  value={confirmar}
+                  onChange={e => setConfirmar(e.target.value)}
+                  placeholder="Repite tu contraseña"
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E8E8E8', fontSize: '14px', marginBottom: '24px', boxSizing: 'border-box' }}
+                />
+                <button
+                  onClick={handleReset}
+                  disabled={loading}
+                  style={{ width: '100%', padding: '14px', borderRadius: '999px', background: '#F4C400', border: 'none', fontWeight: 700, fontSize: '15px', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
+                >
+                  {loading ? 'Actualizando...' : 'Actualizar contraseña'}
+                </button>
+              </>
+            )}
           </>
         )}
       </div>
