@@ -34,14 +34,14 @@ export default function TerminosPage() {
           Términos y Condiciones de Uso de KIPUX
         </h1>
         <p style={{ fontSize: '14px', color: '#6B6B6B', margin: '0 0 40px' }}>
-          Última actualización: [fecha de hoy]
+          Última actualización: 22 de junio de 2026
         </p>
 
         <h2 style={sectionTitle}>1. Aceptación de los términos</h2>
         <p style={p}>
           Al registrarte y usar KIPUX (en adelante "la Aplicación" o "el Servicio"), aceptas estos Términos y
           Condiciones en su totalidad. Si no estás de acuerdo, no debes usar el Servicio. El Servicio es operado
-          por Wilman [Apellido], como persona natural, con domicilio en Venezuela (en adelante "el Operador").
+          por Wilman Mosqueda, como persona natural, con domicilio en Venezuela (en adelante "el Operador").
         </p>
 
         <h2 style={sectionTitle}>2. Descripción del servicio</h2>
@@ -113,7 +113,7 @@ export default function TerminosPage() {
 
         <h2 style={sectionTitle}>11. Contacto</h2>
         <p style={p}>
-          Para cualquier consulta sobre estos Términos, puedes contactar al Operador en: [tu correo de contacto].
+          Para cualquier consulta sobre estos Términos, puedes contactar al Operador en: wjmosqueda@gmail.com.
         </p>
 
         <div style={{ borderTop: '1px solid #E8E8E8', marginTop: '48px', paddingTop: '24px' }}>

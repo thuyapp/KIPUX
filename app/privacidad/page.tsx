@@ -34,12 +34,12 @@ export default function PrivacidadPage() {
           Política de Privacidad de KIPUX
         </h1>
         <p style={{ fontSize: '14px', color: '#6B6B6B', margin: '0 0 40px' }}>
-          Última actualización: [fecha de hoy]
+          Última actualización: 22 de junio de 2026
         </p>
 
         <h2 style={sectionTitle}>1. Introducción</h2>
         <p style={p}>
-          Esta Política de Privacidad explica cómo KIPUX (operado por Wilman [Apellido], persona natural
+          Esta Política de Privacidad explica cómo KIPUX (operado por Wilman Mosqueda, persona natural
           domiciliada en Venezuela, en adelante "el Operador") recopila, usa y protege tu información cuando
           usas el Servicio. Respetamos tu privacidad y nos comprometemos a proteger tus datos personales.
         </p>
@@ -113,7 +113,7 @@ export default function PrivacidadPage() {
         <h2 style={sectionTitle}>11. Contacto</h2>
         <p style={p}>
           Para cualquier consulta sobre privacidad o para ejercer tus derechos, contáctanos en:
-          [tu correo de contacto].
+          wjmosqueda@gmail.com.
         </p>
 
         <div style={{ borderTop: '1px solid #E8E8E8', marginTop: '48px', paddingTop: '24px' }}>
