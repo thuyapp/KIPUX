@@ -59,15 +59,16 @@ export default function StockModal({ producto, almacenId, almacenNombre, tipo, o
     const supabase = createClient()
 
     let fotoUrl: string | undefined
-    if (fotoFile) {
+    if (fotoFile && empresaId) {
       const ext = fotoFile.name.split('.').pop() ?? 'jpg'
-      const path = `${empresaId || producto.id}/evidencias/${producto.id}/${Date.now()}.${ext}`
-      const { error: uploadErr } = await supabase.storage
-        .from('productos')
-        .upload(path, fotoFile, { upsert: true })
-      if (!uploadErr) {
-        const { data: urlData } = supabase.storage.from('productos').getPublicUrl(path)
-        fotoUrl = urlData.publicUrl
+      const path = `${empresaId}/evidencias/${producto.id}/${Date.now()}.${ext}`
+      const form = new FormData()
+      form.append('file', fotoFile)
+      form.append('path', path)
+      const res = await fetch('/api/storage/upload-foto', { method: 'POST', body: form })
+      if (res.ok) {
+        const { url } = await res.json()
+        fotoUrl = url
       }
     }
 

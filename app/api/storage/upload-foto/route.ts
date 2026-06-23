@@ -23,18 +23,30 @@ export async function POST(request: NextRequest) {
 
   const formData = await request.formData()
   const file = formData.get('file') as File | null
-  const empresaId = formData.get('empresaId') as string | null
-  const productoId = formData.get('productoId') as string | null
+  if (!file) return NextResponse.json({ error: 'Falta el archivo' }, { status: 400 })
 
-  if (!file || !empresaId || !productoId) {
-    return NextResponse.json({ error: 'Faltan parámetros' }, { status: 400 })
+  // Acepta un path completo o construye el path por defecto con empresaId + productoId
+  const customPath = formData.get('path') as string | null
+  let path: string
+
+  if (customPath) {
+    // Validar que el path pertenece a la empresa del usuario autenticado
+    if (!customPath.startsWith(perfil.empresa_id + '/')) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
+    }
+    path = customPath
+  } else {
+    const empresaId = formData.get('empresaId') as string | null
+    const productoId = formData.get('productoId') as string | null
+    if (!empresaId || !productoId) {
+      return NextResponse.json({ error: 'Faltan parámetros' }, { status: 400 })
+    }
+    if (empresaId !== perfil.empresa_id) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
+    }
+    path = `${empresaId}/${productoId}/foto.png`
   }
 
-  if (empresaId !== perfil.empresa_id) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
-  }
-
-  const path = `${empresaId}/${productoId}/foto.png`
   await supabaseAdmin.storage.from('productos').remove([path])
 
   const bytes = await file.arrayBuffer()
