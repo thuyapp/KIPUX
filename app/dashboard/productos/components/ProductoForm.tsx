@@ -130,19 +130,21 @@ export default function ProductoForm({ modo, empresaId, categorias, almacenes, p
   }
 
   async function uploadFoto(productoId: string): Promise<string | null> {
-    if (!fotoFile) return null
-    const ext = fotoFile.name.split('.').pop() ?? 'jpg'
-    const path = `${empresaId}/${productoId}/foto.${ext}`
-    const supabase = createClient()
-    const { error } = await supabase.storage.from('productos').upload(path, fotoFile, { upsert: true })
-    if (error) {
-      console.error('Error subiendo foto:', error)
-      setErrors(prev => ({ ...prev, foto: `Error al subir foto: ${error.message}` }))
-      return null
-    }
-    const { data } = supabase.storage.from('productos').getPublicUrl(path)
-    return data.publicUrl
+  if (!fotoFile) return null
+  const supabase = createClient()
+  const path = `${empresaId}/${productoId}/foto.png`
+  await supabase.storage.from('productos').remove([path])
+  const { error } = await supabase.storage
+    .from('productos')
+    .upload(path, fotoFile, { upsert: true })
+  if (error) {
+    console.error('Error subiendo foto:', error)
+    setErrors(prev => ({ ...prev, foto: `Error al subir foto: ${error.message}` }))
+    return null
   }
+  const { data } = supabase.storage.from('productos').getPublicUrl(path)
+  return data.publicUrl
+}
 
   async function handleGuardar() {
     const e = validate()
