@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff } from 'lucide-react'
 
@@ -11,6 +11,19 @@ export default function ResetPasswordPage() {
   const [exito, setExito] = useState(false)
   const [mostrar, setMostrar] = useState(false)
   const supabase = createClient()
+
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1))
+    const accessToken = hashParams.get('access_token')
+    const refreshToken = hashParams.get('refresh_token')
+
+    if (accessToken && refreshToken) {
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      })
+    }
+  }, [])
 
   const handleReset = async () => {
     if (password !== confirmar) {
