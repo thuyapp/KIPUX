@@ -126,7 +126,7 @@ logismart-app/
 | Problema | Archivo(s) | Severidad |
 |---------|-----------|-----------|
 | Filtro de almacén en inventario no funciona | `ProductList.tsx` filtro de almacenesSeleccionados | Alta — la lógica siempre retorna `true` (.filter(() => almacenesSeleccionados.length === 0)) |
-| Foto de evidencia en auditoría no se procesa | `ConteoProductos.tsx` | Alta — botón sin `onChange`; la foto se descarta silenciosamente (UX engañosa) |
+| Foto de evidencia en auditoría | `ConteoProductos.tsx` | ✅ Resuelto — `onChange` implementado, preview visual, upload a Storage y `foto_url` guardado en `auditoria_items` |
 | Sin error boundary global | `app/error.tsx` (no existe) | Media |
 | Metadata placeholder | `app/layout.tsx` | Media — title "Create Next App", lang="en" en app en español |
 | Categoría no se asigna en Carga masiva | `ConfirmacionIA.tsx` | Media |
