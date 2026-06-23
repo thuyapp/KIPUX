@@ -478,7 +478,7 @@ export default function ProductList({
         ) : (
           <>
             {/* ── MÓVIL: tarjetas ── */}
-            <div className="md:hidden" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="flex flex-col md:hidden" style={{ gap: '10px' }}>
               {productosFiltrados.map(producto => {
                 const badge = getStockBadge(producto)
                 const valorTotalP = (producto.costo_usd * producto.stock_actual).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })

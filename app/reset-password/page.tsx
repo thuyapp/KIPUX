@@ -7,7 +7,8 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmar, setConfirmar] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [errorEnlace, setErrorEnlace] = useState('')
+  const [errorForm, setErrorForm] = useState('')
   const [exito, setExito] = useState(false)
   const [mostrar, setMostrar] = useState(false)
   const [sessionLista, setSessionLista] = useState(false)
@@ -35,7 +36,7 @@ export default function ResetPasswordPage() {
       }
 
       // Si no hay código ni sesión, mostrar error
-      setError('El enlace de recuperación es inválido o ha expirado. Solicita uno nuevo.')
+      setErrorEnlace('El enlace de recuperación es inválido o ha expirado. Solicita uno nuevo.')
       setSessionLista(true)
     }
 
@@ -44,17 +45,17 @@ export default function ResetPasswordPage() {
 
   const handleReset = async () => {
     if (password !== confirmar) {
-      setError('Las contraseñas no coinciden')
+      setErrorForm('Las contraseñas no coinciden')
       return
     }
     if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
+      setErrorForm('La contraseña debe tener al menos 6 caracteres')
       return
     }
     setLoading(true)
-    setError('')
+    setErrorForm('')
     const { error } = await supabase.auth.updateUser({ password })
-    if (error) setError(error.message)
+    if (error) setErrorForm(error.message)
     else setExito(true)
     setLoading(false)
   }
@@ -82,18 +83,20 @@ export default function ResetPasswordPage() {
           <>
             <h2 style={{ fontSize: '24px', fontWeight: 700, margin: '0 0 8px' }}>Nueva contraseña</h2>
             <p style={{ color: '#6B6B6B', fontSize: '14px', margin: '0 0 24px' }}>Elige una contraseña segura para tu cuenta.</p>
-            {error && (
+            {errorEnlace ? (
               <div style={{ background: '#FFE8E8', borderRadius: '10px', padding: '12px', color: '#FF4D4D', fontSize: '13px', marginBottom: '16px' }}>
-                {error}
-                {error.includes('inválido') && (
-                  <div style={{ marginTop: '8px' }}>
-                    <a href="/login" style={{ color: '#FF4D4D', fontWeight: 600 }}>← Solicitar nuevo enlace</a>
+                {errorEnlace}
+                <div style={{ marginTop: '8px' }}>
+                  <a href="/login" style={{ color: '#FF4D4D', fontWeight: 600 }}>← Solicitar nuevo enlace</a>
+                </div>
+              </div>
+            ) : (
+              <>
+                {errorForm && (
+                  <div style={{ background: '#FFE8E8', borderRadius: '10px', padding: '12px', color: '#FF4D4D', fontSize: '13px', marginBottom: '16px' }}>
+                    {errorForm}
                   </div>
                 )}
-              </div>
-            )}
-            {!error && (
-              <>
                 <label style={{ fontSize: '13px', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Nueva contraseña</label>
                 <div style={{ position: 'relative', marginBottom: '16px' }}>
                   <input
