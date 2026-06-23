@@ -162,7 +162,7 @@ export default async function ProductoDetallePage({
           <img
             src={producto.foto_url}
             alt={producto.nombre}
-            style={{ width: '100%', maxHeight: '220px', objectFit: 'cover', display: 'block' }}
+            style={{ width: '100%', height: '240px', objectFit: 'contain', display: 'block', background: '#F8F6EA', borderRadius: '12px' }}
           />
         ) : (
           <div style={{
