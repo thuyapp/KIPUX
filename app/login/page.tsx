@@ -45,24 +45,37 @@ export default function LoginPage() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
-    setError('')
     if (!aceptaTerminos) {
       setError('Debes aceptar los Términos y Política de Privacidad')
       return
     }
-    setLoading(true)
-    const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { nombre } },
-    })
-    setLoading(false)
-    if (error) {
-      setError(error.message)
+    if (!nombre || !email || !password) {
+      setError('Todos los campos son requeridos')
       return
     }
-    setMensaje('Cuenta creada. Revisa tu correo para confirmar tu cuenta.')
+    setLoading(true)
+    setError('')
+
+    try {
+      const res = await fetch('/api/registro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, negocio, email, password }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al crear la cuenta')
+
+      const supabase = createClient()
+      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password })
+      if (loginError) throw loginError
+
+      router.push('/dashboard')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al crear la cuenta')
+    } finally {
+      setLoading(false)
+    }
   }
 
   function inputStyle(field: string): React.CSSProperties {
